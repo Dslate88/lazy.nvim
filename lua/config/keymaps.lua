@@ -6,7 +6,7 @@ local map = vim.keymap.set
 -- General Mappings
 -- ===========================================================
 -- Swap to the most recent buffer
-map("n", "<leader><leader>", "<C-^>", { desc = "Swap to Previous Buffer" })
+map("n", "<leader><leader>", "<C-^>", { desc = "Last Buffer" })
 
 -- Move current line up/down
 map("n", "<leader>j", ":m+<CR>==", { desc = "Move Line Down" })
