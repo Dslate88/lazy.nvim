@@ -1,96 +1,78 @@
--- TODO: the goal should be used as the system message, its not currently
-local async = require("plenary.async")
 local utils = require("user.ai_tools.utils")
-local provider_factory = require("user.ai_tools.providers.provider_factory")
-local logger = require("user.ai_tools.logger")
+local runner = require("user.ai_tools.runner")
 local ui = require("user.ai_tools.ui")
-local global_config = require("user.ai_tools.config")
-local history = require("user.ai_tools.history")
 local marked = require("user.ai_tools.harpoon")
+local config = require("user.ai_tools.config")
 
 local M = {}
 
-local config = {
-  provider = "openai",
-  window_type = "split", -- Options: 'popup' or 'split'
+local script_config = {
+  action = "harpoon_review",
+  window_type = "split",
   enable_history = true,
-  system_message = "You are an expert code reviewer, you think step by step, explain your thoughts and you help the user with the following GOAL: ",
+  system_message = "You are an expert code reviewer. Think step by step, explain your thoughts, and help the user with the following GOAL: ",
+  max_file_bytes = 200 * 1024,
 }
 
-function M.format_files(files)
-  local p = {}
-
+local function read_files(files)
+  local chunks = {}
   for _, file in ipairs(files) do
     local content, err = utils.read_file(file.filename)
     if not content then
-      print("Error reading file: " .. err)
-      return nil, err
+      return nil, "Error reading file: " .. err
     end
-    table.insert(p, "FILE NAME BEGIN: " .. file.filename .. "\n")
-    table.insert(p, "FILE CONTENT BEGIN:\n" .. content .. "\nFILE CONTENT END\n")
+    if script_config.max_file_bytes and #content > script_config.max_file_bytes then
+      content = content:sub(1, script_config.max_file_bytes) .. "\n\n[Truncated due to size]"
+    end
+    table.insert(chunks, "FILE NAME BEGIN: " .. file.filename .. "\n")
+    table.insert(chunks, "FILE CONTENT BEGIN:\n" .. content .. "\nFILE CONTENT END\n")
   end
-
-  local prompt = table.concat(p, "\n")
-  return prompt
+  return table.concat(chunks, "\n")
 end
 
-function M.post(goal, prompt)
-  async.run(function()
-    local cfg = global_config.get_config()
-    local provider = provider_factory.get_provider(config.provider)
-    local provider_settings = vim.tbl_deep_extend("force", {}, cfg.providers[config.provider], {
-      system_message = config.system_message .. goal,
-      timeout = cfg.timeout,
-    })
-    logger.log("provider_settings: " .. provider_settings.system_message)
-
-    provider.send_request(prompt, provider_settings, vim.schedule_wrap(function(result, err)
-      if err then
-        ui.display_error("Error during AI response request: " .. err)
-        return
-      end
-      ui.display_response(result.choices[1].message.content, config.window_type)
-    end))
-  end)
+local function build_meta(goal, files)
+  return {
+    goal = goal,
+    files = files,
+    timestamp = os.time(),
+  }
 end
 
 function M.execute()
-  local function is_goal_empty(goal)
+  ui.get_user_prompt({
+    prompt = "Enter the goal:",
+    enable_history = script_config.enable_history,
+    action = script_config.action,
+  }, function(goal)
     if goal == "" then
       print("Goal cannot be empty.")
-      return true
-    end
-  end
-
-  local function is_marked_files(marked_files)
-    if #marked_files == 0 then
-      print("No marked files found during execution.")
-      return true
-    end
-  end
-
-  ui.get_user_prompt("Enter the goal:", config.enable_history, function(goal)
-    logger.log("initial goal input: " .. goal)
-    if is_goal_empty(goal) then
       return
     end
 
     local files = marked.get_marked_files()
-    if is_marked_files(files) then
+    if #files == 0 then
+      print("No marked files found during execution.")
       return
     end
 
-    local prompt, err = M.format_files(files)
+    local prompt, err = read_files(files)
     if not prompt then
-      print("Error formatting prompt: ", err)
+      ui.display_error(err or "Failed to build prompt from files.")
       return
     end
 
-    M.post(goal, prompt)
+    local meta = build_meta(goal, files)
+    local cfg = config.get_config()
 
-    if config.enable_history then
-      history.add(goal, "AI response not captured in this script.")
-    end
+    runner.run({
+      action = script_config.action,
+      prompt = prompt,
+      system_message = script_config.system_message .. goal,
+      window_type = script_config.window_type,
+      enable_history = script_config.enable_history,
+      timeout = cfg.timeout,
+      meta = meta,
+    })
   end)
 end
 

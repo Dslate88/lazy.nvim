@@ -7,22 +7,7 @@ return {
     name = "ai-tools-local",
     dir = vim.fn.stdpath("config") .. "/lua/user/ai_tools",
     lazy = true,
-    opts = {
-      default_provider = "openai",
-      default_system_message = "You are a helpful assistant.",
-      window_type = "popup",
-      enable_history = true,
-      timeout = 60000,
-      providers = {
-        openai = { api_key = os.getenv("OPENAI_API_KEY"), model = "gpt-4o" },
-        azure = {
-          api_key = os.getenv("AZURE_OPENAI_API_KEY"),
-          endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"),
-          deployment_id = "gpt-4o",
-          model = "gpt-4o",
-        },
-      },
-    },
+    opts = require("user.ai_tools.config").defaults,
     keys = {
       {
         "<leader>ac",
