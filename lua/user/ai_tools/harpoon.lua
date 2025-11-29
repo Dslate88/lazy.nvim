@@ -2,7 +2,6 @@ local M = {}
 
 local harpoon = require("harpoon")
 
--- Harpoon v2 helper: returns marked files using the new list API.
 function M.get_marked_files()
   local ok, list = pcall(function()
     return harpoon:list()
