@@ -7,6 +7,7 @@ return {
     spec = {
       {
         mode = { "n", "x" },
+        -- TODO: convert to nerdfont
         -- TODO: find ways to integrate better icons for groupings..
         { "<leader>a", group = "ai", icon = "A" },
         { "<leader>h", group = "harpoon", icon = "H" },
@@ -14,3 +15,5 @@ return {
     },
   },
 }
+-- TODO:: ai tool that consumes compiled keymap spec for q/a
+-- TODO: get dif between branch and main into a register

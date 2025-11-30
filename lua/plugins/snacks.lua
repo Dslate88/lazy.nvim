@@ -19,8 +19,25 @@ return {
       end,
       desc = "Send all picker items to quickfix",
     },
-    -- disable the keymap to grep files
-    -- { "<leader>/", false },
+    -- disable: pick files
+    { "<leader><space>", false },
+
+    -- disable: recent file picker
+    { "<leader>fr", false },
+    { "<leader>fR", false },
+
+    -- disable: git diff by hunk
+    { "<leader>gd", false },
+
+    -- disable: git diff vs origin
+    { "<leader>gD", false },
+
+    -- disable: git status
+    { "<leader>gs", false },
+
+    -- disable: git stashes
+    { "<leader>gS", false },
+
     -- change a keymap
     -- { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
   },
