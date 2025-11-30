@@ -4,7 +4,6 @@ M.defaults = {
   default_provider = "openai",
   default_system_message = "You are a helpful assistant.",
   window_type = "popup",
-  enable_history = false,
   timeout = 60000, -- 60 seconds
   providers = {
     openai = {
@@ -33,7 +32,6 @@ local function validate(cfg)
     default_provider = { cfg.default_provider, "string" },
     default_system_message = { cfg.default_system_message, "string" },
     window_type = { cfg.window_type, "string" },
-    enable_history = { cfg.enable_history, "boolean" },
     timeout = { cfg.timeout, "number" },
     providers = { cfg.providers, "table" },
   })

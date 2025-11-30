@@ -4,13 +4,11 @@ local marked = require("user.ai_tools.harpoon")
 
 local M = {}
 
--- opts: prompt (string), allow_empty (bool), save_as (string), enable_history (bool), history_action (string)
+-- opts: prompt (string), allow_empty (bool), save_as (string)
 function M.user_prompt(opts, state, cb)
   local label = opts.prompt or "Enter input:"
   ui.get_user_prompt({
     prompt = label,
-    enable_history = opts.enable_history,
-    action = opts.history_action or "default",
   }, function(input)
     if (not opts.allow_empty) and (not input or input == "") then
       cb("Input cannot be empty.")

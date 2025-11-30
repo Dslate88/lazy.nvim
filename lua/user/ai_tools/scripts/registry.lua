@@ -16,7 +16,6 @@ local registry = {
     title = "Chat",
     system = "Formatting re-enabled - code output should be wrapped in markdown, and use markdown to make text easier to read.",
     window = "popup",
-    history = { enabled = true, action = "chat" },
     context = {
       { type = "user_prompt", prompt = "Enter your prompt:", save_as = "prompt" },
     },
@@ -31,7 +30,6 @@ local registry = {
       )
     end,
     window = "split",
-    history = { enabled = true, action = "harpoon_review" },
     context = {
       { type = "user_prompt", prompt = "Enter the goal", save_as = "goal" },
       { type = "harpoon_files", max_bytes = 1024 * 1024 },
@@ -46,7 +44,6 @@ local registry = {
       return ("You are a git assistant. Use the diff to help the user achieve the goal: %s"):format(goal)
     end,
     window = "split",
-    history = { enabled = true, action = "git_diff_assist" },
     context = {
       {
         type = "user_prompt",
@@ -71,7 +68,6 @@ local registry = {
       }, " ")
     end,
     window = "split",
-    history = { enabled = true, action = "design_pattern_audit" },
     context = {
       { type = "user_prompt", prompt = "Enter focus areas (optional):", save_as = "focus", allow_empty = true },
       { type = "harpoon_files", max_bytes = 1024 * 1024 },
@@ -101,12 +97,7 @@ local function run_builders(entry, idx, state, chunks, meta, cb)
     return
   end
 
-  local builder_opts = vim.tbl_deep_extend("force", {}, item, {
-    enable_history = entry.history and entry.history.enabled or false,
-    history_action = entry.history and entry.history.action or entry.id,
-  })
-
-  builder(builder_opts, state, function(err, result)
+  builder(vim.tbl_deep_extend("force", {}, item), state, function(err, result)
     if err then
       cb(err)
       return
@@ -169,14 +160,11 @@ function M.run(action)
     logger.info(ok and encoded or ("registry.run payload encode failed: " .. tostring(encoded)))
 
     runner.run({
-      action = entry.id,
       prompt = prompt,
       system_message = system_message,
       window_type = entry.window or cfg.window_type,
-      enable_history = entry.history and entry.history.enabled or false,
       provider = entry.provider,
       timeout = entry.timeout or cfg.timeout,
-      meta = vim.tbl_deep_extend("force", final_meta, { state = final_state }),
     })
   end)
 end
