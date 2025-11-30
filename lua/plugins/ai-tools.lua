@@ -14,14 +14,21 @@ return {
         function()
           require("user.ai_tools.scripts.chat").execute()
         end,
-        desc = "AI Chat",
+        desc = "Chat",
       },
       {
         "<leader>ar",
         function()
           require("user.ai_tools.scripts.harpoon_list").execute()
         end,
-        desc = "AI Review Harpoon",
+        desc = "Harpoon Goal",
+      },
+      {
+        "<leader>ap",
+        function()
+          require("user.ai_tools.scripts.design_pattern_audit").execute()
+        end,
+        desc = "Design Pattern Audit",
       },
     },
     config = function(_, opts)

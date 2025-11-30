@@ -9,7 +9,7 @@ M.defaults = {
   providers = {
     openai = {
       api_key = os.getenv("OPENAI_API_KEY"),
-      model = "gpt-4o",
+      model = "gpt-5.1",
     },
     azure = {
       api_key = os.getenv("AZURE_OPENAI_API_KEY"),

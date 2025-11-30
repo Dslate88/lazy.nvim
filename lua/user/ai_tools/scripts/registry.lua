@@ -1,0 +1,150 @@
+local builders = require("user.ai_tools.context.builders")
+local runner = require("user.ai_tools.runner")
+local config = require("user.ai_tools.config")
+local ui = require("user.ai_tools.ui")
+
+local M = {}
+
+local function concat_chunks(chunks)
+  return table.concat(chunks, "\n\n")
+end
+
+-- Registry entries
+local registry = {
+  chat = {
+    id = "chat",
+    title = "Chat",
+    system = "Formatting re-enabled - code output should be wrapped in markdown, and use markdown to make text easier to read.",
+    window = "popup",
+    history = { enabled = true, action = "chat" },
+    context = {
+      { type = "user_prompt", prompt = "Enter your prompt:", save_as = "prompt" },
+    },
+    format_prompt = concat_chunks,
+  },
+  harpoon_review = {
+    id = "harpoon_review",
+    title = "Harpoon Review",
+    system = function(state)
+      return ("You are an expert code reviewer. Think step by step, explain your thoughts, and help the user with the following GOAL: %s"):format(
+        state.goal or ""
+      )
+    end,
+    window = "split",
+    history = { enabled = true, action = "harpoon_review" },
+    context = {
+      { type = "user_prompt", prompt = "Enter the goal:", save_as = "goal" },
+      { type = "harpoon_files", max_bytes = 200 * 1024 },
+    },
+    format_prompt = concat_chunks,
+  },
+  design_pattern_audit = {
+    id = "design_pattern_audit",
+    title = "Design Pattern Audit",
+    system = function(state)
+      local focus = state.focus and state.focus ~= "" and (" Focus areas: " .. state.focus) or ""
+      return table.concat({
+        "You are a design patterns coach drawing on 'Design Patterns: Elements of Reusable Object-Oriented Software'.",
+        "Analyze the provided code for opportunities to apply or improve patterns. Call out misuses or missing abstractions.",
+        "Teach as you go: briefly explain why a pattern fits, tradeoffs, and small steps to implement it.",
+        focus,
+      }, " ")
+    end,
+    window = "split",
+    history = { enabled = true, action = "design_pattern_audit" },
+    context = {
+      { type = "user_prompt", prompt = "Enter focus areas (optional):", save_as = "focus", allow_empty = true },
+      { type = "harpoon_files", max_bytes = 1024 * 1024 },
+    },
+    format_prompt = concat_chunks,
+  },
+}
+
+local function get_entry(action)
+  local entry = registry[action]
+  if not entry then
+    error("Unknown ai_tools action: " .. tostring(action))
+  end
+  return entry
+end
+
+local function run_builders(entry, idx, state, chunks, meta, cb)
+  local item = entry.context[idx]
+  if not item then
+    cb(nil, state, chunks, meta)
+    return
+  end
+
+  local builder = builders[item.type]
+  if not builder then
+    cb("Unknown context builder: " .. tostring(item.type))
+    return
+  end
+
+  local builder_opts = vim.tbl_deep_extend("force", {}, item, {
+    enable_history = entry.history and entry.history.enabled or false,
+    history_action = entry.history and entry.history.action or entry.id,
+  })
+
+  builder(builder_opts, state, function(err, result)
+    if err then
+      cb(err)
+      return
+    end
+
+    if result then
+      if result.prompt then
+        table.insert(chunks, result.prompt)
+      end
+      if result.meta then
+        meta = vim.tbl_deep_extend("force", meta, result.meta)
+      end
+    end
+
+    run_builders(entry, idx + 1, state, chunks, meta, cb)
+  end)
+end
+
+function M.run(action)
+  local entry = get_entry(action)
+  local state = {}
+  local chunks = {}
+  local meta = {}
+
+  run_builders(entry, 1, state, chunks, meta, function(err, final_state, final_chunks, final_meta)
+    if err then
+      ui.display_error(err)
+      return
+    end
+
+    local prompt = entry.format_prompt and entry.format_prompt(final_chunks, final_state) or concat_chunks(final_chunks)
+    if not prompt or prompt == "" then
+      ui.display_error("Prompt cannot be empty.")
+      return
+    end
+
+    local system_message = type(entry.system) == "function" and entry.system(final_state) or entry.system
+    if not system_message or system_message == "" then
+      system_message = config.default_system_message
+    end
+
+    local cfg = config.get_config()
+
+    runner.run({
+      action = entry.id,
+      prompt = prompt,
+      system_message = system_message,
+      window_type = entry.window or cfg.window_type,
+      enable_history = entry.history and entry.history.enabled or false,
+      provider = entry.provider,
+      timeout = entry.timeout or cfg.timeout,
+      meta = vim.tbl_deep_extend("force", final_meta, { state = final_state }),
+    })
+  end)
+end
+
+function M.get_entries()
+  return registry
+end
+
+return M
