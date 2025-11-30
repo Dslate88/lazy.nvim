@@ -12,21 +12,21 @@ return {
       {
         "<leader>ac",
         function()
-          require("user.ai_tools.scripts.chat").execute()
+          require("user.ai_tools.scripts").chat()
         end,
         desc = "Chat",
       },
       {
         "<leader>ar",
         function()
-          require("user.ai_tools.scripts.harpoon_list").execute()
+          require("user.ai_tools.scripts").harpoon_review()
         end,
         desc = "Harpoon Goal",
       },
       {
         "<leader>ap",
         function()
-          require("user.ai_tools.scripts.design_pattern_audit").execute()
+          require("user.ai_tools.scripts").design_pattern_audit()
         end,
         desc = "Design Pattern Audit",
       },
