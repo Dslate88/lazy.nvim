@@ -2,6 +2,7 @@ local builders = require("user.ai_tools.context.builders")
 local runner = require("user.ai_tools.runner")
 local config = require("user.ai_tools.config")
 local ui = require("user.ai_tools.ui")
+local logger = require("user.ai_tools.logger")
 
 local M = {}
 
@@ -9,7 +10,6 @@ local function concat_chunks(chunks)
   return table.concat(chunks, "\n\n")
 end
 
--- Registry entries
 local registry = {
   chat = {
     id = "chat",
@@ -34,7 +34,27 @@ local registry = {
     history = { enabled = true, action = "harpoon_review" },
     context = {
       { type = "user_prompt", prompt = "Enter the goal:", save_as = "goal" },
-      { type = "harpoon_files", max_bytes = 200 * 1024 },
+      { type = "harpoon_files", max_bytes = 1024 * 1024 },
+    },
+    format_prompt = concat_chunks,
+  },
+  git_diff_assist = {
+    id = "git_diff_assist",
+    title = "Git Diff Assist",
+    system = function(state)
+      local goal = (state.goal and state.goal ~= "") and state.goal or "Summarize and review the staged changes."
+      return ("You are a git assistant. Use the diff to help the user achieve the goal: %s"):format(goal)
+    end,
+    window = "split",
+    history = { enabled = true, action = "git_diff_assist" },
+    context = {
+      {
+        type = "user_prompt",
+        prompt = "Describe your goal (commit message, review focus, etc.):",
+        save_as = "goal",
+        allow_empty = true,
+      },
+      { type = "git_diff", max_bytes = 1024 * 1024 },
     },
     format_prompt = concat_chunks,
   },
@@ -129,6 +149,22 @@ function M.run(action)
     end
 
     local cfg = config.get_config()
+    local log_data = {
+      entry = {
+        id = entry.id,
+        title = entry.title,
+        context = entry.context,
+        window = entry.window,
+        provider = entry.provider,
+      },
+      state = final_state,
+      chunks = final_chunks,
+      meta = final_meta,
+      prompt = prompt,
+      system_message = system_message,
+    }
+
+    logger.info("registry.run payload:\n" .. vim.inspect(log_data))
 
     runner.run({
       action = entry.id,

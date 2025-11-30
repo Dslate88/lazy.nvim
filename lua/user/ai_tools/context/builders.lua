@@ -4,7 +4,6 @@ local marked = require("user.ai_tools.harpoon")
 
 local M = {}
 
--- Generic user prompt builder (async).
 -- opts: prompt (string), allow_empty (bool), save_as (string), enable_history (bool), history_action (string)
 function M.user_prompt(opts, state, cb)
   local label = opts.prompt or "Enter input:"
@@ -28,7 +27,6 @@ function M.user_prompt(opts, state, cb)
   end)
 end
 
--- Gather contents of harpoon-marked files.
 -- opts: max_bytes (number|nil)
 function M.harpoon_files(opts, state, cb)
   local files = marked.get_marked_files()
@@ -58,6 +56,50 @@ function M.harpoon_files(opts, state, cb)
     prompt = table.concat(chunks, "\n"),
     meta = meta,
   })
+end
+
+-- opts: max_bytes (number|nil), include_unstaged (bool), git_cmd (table|nil), cwd (string|nil)
+function M.git_diff(opts, state, cb)
+  local max_bytes = opts.max_bytes or 200 * 1024
+  local include_unstaged = opts.include_unstaged or false
+  local cmd = opts.git_cmd
+    or (include_unstaged and { "git", "diff", "--no-color" } or { "git", "diff", "--cached", "--no-color" })
+
+  vim.system(cmd, { text = true, cwd = opts.cwd }, function(obj)
+    if obj.code ~= 0 then
+      local stderr = (obj.stderr or ""):gsub("%s+$", "")
+      cb("Git diff failed: " .. (stderr ~= "" and stderr or ("exit code " .. tostring(obj.code))))
+      return
+    end
+
+    local stdout = obj.stdout or ""
+    if stdout == "" then
+      cb(include_unstaged and "No unstaged changes found." or "No staged changes found.")
+      return
+    end
+
+    local truncated = false
+    local prompt = stdout
+    if max_bytes and #prompt > max_bytes then
+      prompt = prompt:sub(1, max_bytes) .. "\n\n[Diff truncated to " .. max_bytes .. " bytes]"
+      truncated = true
+    end
+
+    cb(nil, {
+      prompt = table.concat({
+        "GIT DIFF BEGIN",
+        prompt,
+        "GIT DIFF END",
+      }, "\n"),
+      meta = {
+        git_cmd = cmd,
+        include_unstaged = include_unstaged,
+        truncated = truncated,
+        bytes = #stdout,
+        max_bytes = max_bytes,
+      },
+    })
+  end)
 end
 
 return M
