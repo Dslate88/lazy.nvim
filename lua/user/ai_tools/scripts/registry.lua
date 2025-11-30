@@ -164,7 +164,8 @@ function M.run(action)
       system_message = system_message,
     }
 
-    logger.info("registry.run payload:\n" .. vim.inspect(log_data))
+    local ok, encoded = pcall(vim.fn.json_encode, log_data)
+    logger.info(ok and encoded or ("registry.run payload encode failed: " .. tostring(encoded)))
 
     runner.run({
       action = entry.id,
