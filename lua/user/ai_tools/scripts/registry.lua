@@ -33,7 +33,7 @@ local registry = {
     window = "split",
     history = { enabled = true, action = "harpoon_review" },
     context = {
-      { type = "user_prompt", prompt = "Enter the goal:", save_as = "goal" },
+      { type = "user_prompt", prompt = "Enter the goal", save_as = "goal" },
       { type = "harpoon_files", max_bytes = 1024 * 1024 },
     },
     format_prompt = concat_chunks,
