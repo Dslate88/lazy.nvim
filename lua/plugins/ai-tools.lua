@@ -12,16 +12,37 @@ return {
       {
         "<leader>ac",
         function()
-          require("user.ai_tools.scripts.chat").execute()
+          require("user.ai_tools.scripts").chat()
         end,
-        desc = "AI Chat",
+        desc = "Chat",
       },
       {
         "<leader>ar",
         function()
-          require("user.ai_tools.scripts.harpoon_list").execute()
+          require("user.ai_tools.scripts").harpoon_review()
         end,
-        desc = "AI Review Harpoon",
+        desc = "Harpoon Goal",
+      },
+      {
+        "<leader>ad",
+        function()
+          require("user.ai_tools.scripts").design_patterns()
+        end,
+        desc = "Design Patterns",
+      },
+      {
+        "<leader>ag",
+        function()
+          require("user.ai_tools.scripts").get_diff_review()
+        end,
+        desc = "Git Diff",
+      },
+      {
+        "<leader>ap",
+        function()
+          require("user.prompt_gen").execute()
+        end,
+        desc = "Prompt Gen",
       },
     },
     config = function(_, opts)

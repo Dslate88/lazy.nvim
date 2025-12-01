@@ -1,5 +1,3 @@
-local history = require("user.ai_tools.history")
-
 local M = {}
 local callbacks = {}
 
@@ -63,19 +61,17 @@ function M.display_response(response, window_type)
   open_response_window(buf, window_type)
 end
 
----Prompt the user for input with optional action-scoped history navigation.
----@param opts table { prompt, enable_history?, action? }
+---Prompt the user for input.
+---@param opts table { prompt?, instructions? }
 ---@param on_submit fun(input:string)
 function M.get_user_prompt(opts, on_submit)
   local prompt = opts.prompt or opts.instructions or "Enter input:"
-  local action = opts.action or "default"
-  local enable_history = opts.enable_history
 
   local buf = vim.api.nvim_create_buf(false, true)
   local width = math.floor(vim.o.columns * 0.5)
   local height = 3
 
-  vim.api.nvim_buf_set_option(buf, "buftype", "prompt")
+  vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   vim.api.nvim_buf_set_option(buf, "filetype", "text")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prompt, "" })
@@ -92,40 +88,6 @@ function M.get_user_prompt(opts, on_submit)
   vim.api.nvim_win_set_cursor(win, { 2, 0 })
 
   callbacks[buf] = on_submit
-
-  local state = { action = action, index = history.count(action) + 1 }
-
-  local function apply_history(idx)
-    local entry = history.get(action, idx)
-    local text = entry and entry.prompt or ""
-    vim.api.nvim_buf_set_lines(buf, 1, -1, false, vim.split(text, "\n"))
-  end
-
-  local function history_prev()
-    if state.index > 1 then
-      state.index = state.index - 1
-      apply_history(state.index)
-    end
-  end
-
-  local function history_next()
-    local count = history.count(action)
-    if state.index < count then
-      state.index = state.index + 1
-      apply_history(state.index)
-    else
-      state.index = count + 1
-      vim.api.nvim_buf_set_lines(buf, 1, -1, false, { "" })
-    end
-  end
-
-  if enable_history then
-    local map_opts = { buffer = buf, noremap = true, silent = true }
-    vim.keymap.set({ "n", "i" }, "<C-k>", history_prev, map_opts)
-    vim.keymap.set({ "n", "i" }, "<C-j>", history_next, map_opts)
-    vim.keymap.set("n", "k", history_prev, map_opts)
-    vim.keymap.set("n", "j", history_next, map_opts)
-  end
 
   local function submit()
     local lines = vim.api.nvim_buf_get_lines(buf, 1, -1, false)

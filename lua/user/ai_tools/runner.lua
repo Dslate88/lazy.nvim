@@ -1,31 +1,27 @@
 local provider_factory = require("user.ai_tools.providers.provider_factory")
-local history = require("user.ai_tools.history")
 local config = require("user.ai_tools.config")
 local ui = require("user.ai_tools.ui")
 
 local M = {}
 
 ---@param opts table
----  - action: string identifier for history scoping
 ---  - prompt: string
 ---  - provider: string|nil
 ---  - system_message: string|nil
 ---  - window_type: string|nil
----  - enable_history: boolean|nil
 ---  - timeout: number|nil
----  - meta: table|nil additional metadata for history
 ---  - on_success: fun(response:string, raw:table)|nil
 function M.run(opts)
   local cfg = config.get_config()
   local provider_name = opts.provider or cfg.default_provider
-  local provider_cfg = cfg.providers[provider_name]
 
-  if not provider_cfg then
-    ui.display_error("Provider not configured: " .. provider_name)
+  local ok, provider = pcall(provider_factory.get_provider, provider_name)
+  if not ok then
+    ui.display_error(provider)
     return
   end
 
-  local provider = provider_factory.get_provider(provider_name)
+  local provider_cfg = cfg.providers[provider_name]
   local settings = vim.tbl_deep_extend("force", {}, provider_cfg, {
     system_message = opts.system_message or cfg.default_system_message,
     timeout = opts.timeout or cfg.timeout,
@@ -49,15 +45,6 @@ function M.run(opts)
 
       local window_type = opts.window_type or cfg.window_type
       ui.display_response(response, window_type)
-
-      if opts.enable_history then
-        local meta = vim.tbl_deep_extend("force", opts.meta or {}, {
-          provider = provider_name,
-          model = settings.model,
-          window_type = window_type,
-        })
-        history.add(opts.action, opts.prompt, response, meta)
-      end
 
       if opts.on_success then
         opts.on_success(response, result)

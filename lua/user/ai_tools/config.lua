@@ -4,12 +4,12 @@ M.defaults = {
   default_provider = "openai",
   default_system_message = "You are a helpful assistant.",
   window_type = "popup",
-  enable_history = false,
   timeout = 60000, -- 60 seconds
+  debug = true,
   providers = {
     openai = {
       api_key = os.getenv("OPENAI_API_KEY"),
-      model = "gpt-4o",
+      model = "gpt-5.1",
     },
     azure = {
       api_key = os.getenv("AZURE_OPENAI_API_KEY"),
@@ -33,8 +33,8 @@ local function validate(cfg)
     default_provider = { cfg.default_provider, "string" },
     default_system_message = { cfg.default_system_message, "string" },
     window_type = { cfg.window_type, "string" },
-    enable_history = { cfg.enable_history, "boolean" },
     timeout = { cfg.timeout, "number" },
+    debug = { cfg.debug, "boolean", true },
     providers = { cfg.providers, "table" },
   })
 
@@ -60,15 +60,6 @@ end
 
 function M.get_config()
   return config
-end
-
-function M.get_provider(name)
-  local provider_name = name or config.default_provider
-  local provider = config.providers[provider_name]
-  if not provider then
-    error("Invalid provider: " .. tostring(provider_name))
-  end
-  return provider, provider_name
 end
 
 apply_config()
