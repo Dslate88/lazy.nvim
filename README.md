@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/8a78a34f-6581-4e64-aa7a-d1d02164b8d3
 https://github.com/user-attachments/assets/403a9109-9f45-49b0-9bf3-d8b647508be4
 
 
-### LLM Utilization:
+### Custom LLM Plugin Example:
 - For languages I am not familiar with, that are not production systems, using LLM's can be helpful.
 - For instance, my keymap will format the active files, inject them as context with the goal I provide in the UI below.
 <img width="1199" height="362" alt="image" src="https://github.com/user-attachments/assets/397968ef-34a3-4c6e-a2e3-75c581990c59" />
