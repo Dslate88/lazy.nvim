@@ -15,7 +15,7 @@ function M.harpoon_review()
 end
 
 function M.design_patterns()
-  registry.run("design_pattern")
+  registry.run("design_patterns")
 end
 
 function M.get_diff_review()

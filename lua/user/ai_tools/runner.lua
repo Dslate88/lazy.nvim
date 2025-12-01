@@ -14,14 +14,14 @@ local M = {}
 function M.run(opts)
   local cfg = config.get_config()
   local provider_name = opts.provider or cfg.default_provider
-  local provider_cfg = cfg.providers[provider_name]
 
-  if not provider_cfg then
-    ui.display_error("Provider not configured: " .. provider_name)
+  local ok, provider = pcall(provider_factory.get_provider, provider_name)
+  if not ok then
+    ui.display_error(provider)
     return
   end
 
-  local provider = provider_factory.get_provider(provider_name)
+  local provider_cfg = cfg.providers[provider_name]
   local settings = vim.tbl_deep_extend("force", {}, provider_cfg, {
     system_message = opts.system_message or cfg.default_system_message,
     timeout = opts.timeout or cfg.timeout,

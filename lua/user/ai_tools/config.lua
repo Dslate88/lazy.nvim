@@ -62,15 +62,6 @@ function M.get_config()
   return config
 end
 
-function M.get_provider(name)
-  local provider_name = name or config.default_provider
-  local provider = config.providers[provider_name]
-  if not provider then
-    error("Invalid provider: " .. tostring(provider_name))
-  end
-  return provider, provider_name
-end
-
 apply_config()
 
 return M
