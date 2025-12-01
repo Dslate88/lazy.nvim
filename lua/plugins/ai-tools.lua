@@ -24,11 +24,18 @@ return {
         desc = "Harpoon Goal",
       },
       {
-        "<leader>ap",
+        "<leader>ad",
         function()
           require("user.ai_tools.scripts").design_pattern_audit()
         end,
         desc = "Design Pattern Audit",
+      },
+      {
+        "<leader>ap",
+        function()
+          require("user.prompt_gen").execute()
+        end,
+        desc = "Prompt Gen",
       },
     },
     config = function(_, opts)
