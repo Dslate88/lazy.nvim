@@ -5,6 +5,7 @@ M.defaults = {
   default_system_message = "You are a helpful assistant.",
   window_type = "popup",
   timeout = 60000, -- 60 seconds
+  debug = true,
   providers = {
     openai = {
       api_key = os.getenv("OPENAI_API_KEY"),
@@ -33,6 +34,7 @@ local function validate(cfg)
     default_system_message = { cfg.default_system_message, "string" },
     window_type = { cfg.window_type, "string" },
     timeout = { cfg.timeout, "number" },
+    debug = { cfg.debug, "boolean", true },
     providers = { cfg.providers, "table" },
   })
 

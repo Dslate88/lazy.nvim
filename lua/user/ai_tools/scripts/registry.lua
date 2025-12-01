@@ -138,26 +138,27 @@ function M.run(action)
     if not system_message or system_message == "" then
       system_message = config.default_system_message
     end
-
     local cfg = config.get_config()
-    local log_data = {
-      entry = {
-        id = entry.id,
-        title = entry.title,
-        context = entry.context,
-        window = entry.window,
-        provider = entry.provider,
-      },
-      state = final_state,
-      chunks = final_chunks,
-      meta = final_meta,
-      prompt = prompt,
-      system_message = system_message,
-    }
 
-    local ok, encoded = pcall(vim.json.encode, log_data)
+    if cfg.debug then
+      local log_data = {
+        entry = {
+          id = entry.id,
+          title = entry.title,
+          context = entry.context,
+          window = entry.window,
+          provider = entry.provider,
+        },
+        state = final_state,
+        chunks = final_chunks,
+        meta = final_meta,
+        prompt = prompt,
+        system_message = system_message,
+      }
 
-    logger.info(ok and encoded or ("registry.run payload encode failed: " .. tostring(encoded)))
+      local ok, encoded = pcall(vim.json.encode, log_data)
+      logger.info(ok and encoded or ("registry.run payload encode failed: " .. tostring(encoded)))
+    end
 
     runner.run({
       prompt = prompt,
