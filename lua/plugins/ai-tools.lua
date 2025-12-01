@@ -26,9 +26,16 @@ return {
       {
         "<leader>ad",
         function()
-          require("user.ai_tools.scripts").design_pattern_audit()
+          require("user.ai_tools.scripts").design_patterns()
         end,
-        desc = "Design Pattern Audit",
+        desc = "Design Patterns",
+      },
+      {
+        "<leader>ag",
+        function()
+          require("user.ai_tools.scripts").get_diff_review()
+        end,
+        desc = "Git Diff",
       },
       {
         "<leader>ap",

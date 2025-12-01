@@ -25,7 +25,7 @@ function M.user_prompt(opts, state, cb)
   end)
 end
 
--- opts: max_bytes (number|nil)
+-- opts: table|nil
 function M.harpoon_files(opts, state, cb)
   local files = marked.get_marked_files()
   if #files == 0 then
@@ -34,17 +34,13 @@ function M.harpoon_files(opts, state, cb)
   end
 
   local chunks = {}
-  local meta = { files = files, truncated = {} }
+  local meta = { files = files }
 
   for _, file in ipairs(files) do
     local content, err = utils.read_file(file.filename)
     if not content then
       cb("Error reading file: " .. (err or "unknown error"))
       return
-    end
-    if opts.max_bytes and #content > opts.max_bytes then
-      content = content:sub(1, opts.max_bytes) .. "\n\n[Truncated due to size]"
-      table.insert(meta.truncated, file.filename)
     end
     table.insert(chunks, "FILE NAME BEGIN: " .. file.filename .. "\n")
     table.insert(chunks, "FILE CONTENT BEGIN:\n" .. content .. "\nFILE CONTENT END\n")
@@ -56,9 +52,8 @@ function M.harpoon_files(opts, state, cb)
   })
 end
 
--- opts: max_bytes (number|nil), include_unstaged (bool), git_cmd (table|nil), cwd (string|nil)
+-- opts: include_unstaged (bool), git_cmd (table|nil), cwd (string|nil)
 function M.git_diff(opts, state, cb)
-  local max_bytes = opts.max_bytes or 200 * 1024
   local include_unstaged = opts.include_unstaged or false
   local cmd = opts.git_cmd
     or (include_unstaged and { "git", "diff", "--no-color" } or { "git", "diff", "--cached", "--no-color" })
@@ -76,12 +71,7 @@ function M.git_diff(opts, state, cb)
       return
     end
 
-    local truncated = false
     local prompt = stdout
-    if max_bytes and #prompt > max_bytes then
-      prompt = prompt:sub(1, max_bytes) .. "\n\n[Diff truncated to " .. max_bytes .. " bytes]"
-      truncated = true
-    end
 
     cb(nil, {
       prompt = table.concat({
@@ -92,9 +82,7 @@ function M.git_diff(opts, state, cb)
       meta = {
         git_cmd = cmd,
         include_unstaged = include_unstaged,
-        truncated = truncated,
         bytes = #stdout,
-        max_bytes = max_bytes,
       },
     })
   end)

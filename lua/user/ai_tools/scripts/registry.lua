@@ -32,13 +32,13 @@ local registry = {
     window = "split",
     context = {
       { type = "user_prompt", prompt = "Enter the goal", save_as = "goal" },
-      { type = "harpoon_files", max_bytes = 1024 * 1024 },
+      { type = "harpoon_files" },
     },
     format_prompt = concat_chunks,
   },
-  git_diff_assist = {
-    id = "git_diff_assist",
-    title = "Git Diff Assist",
+  git_diff_review = {
+    id = "git_diff_review",
+    title = "Git Diff Review",
     system = function(state)
       local goal = (state.goal and state.goal ~= "") and state.goal or "Summarize and review the staged changes."
       return ("You are a git assistant. Use the diff to help the user achieve the goal: %s"):format(goal)
@@ -51,13 +51,13 @@ local registry = {
         save_as = "goal",
         allow_empty = true,
       },
-      { type = "git_diff", max_bytes = 1024 * 1024 },
+      { type = "git_diff" },
     },
     format_prompt = concat_chunks,
   },
-  design_pattern_audit = {
-    id = "design_pattern_audit",
-    title = "Design Pattern Audit",
+  design_patterns = {
+    id = "design_patterns",
+    title = "Design Patterns",
     system = function(state)
       local focus = state.focus and state.focus ~= "" and (" Focus areas: " .. state.focus) or ""
       return table.concat({
@@ -70,7 +70,7 @@ local registry = {
     window = "split",
     context = {
       { type = "user_prompt", prompt = "Enter focus areas (optional):", save_as = "focus", allow_empty = true },
-      { type = "harpoon_files", max_bytes = 1024 * 1024 },
+      { type = "harpoon_files" },
     },
     format_prompt = concat_chunks,
   },

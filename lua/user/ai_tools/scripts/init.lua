@@ -14,8 +14,12 @@ function M.harpoon_review()
   registry.run("harpoon_review")
 end
 
-function M.design_pattern_audit()
-  registry.run("design_pattern_audit")
+function M.design_patterns()
+  registry.run("design_pattern")
+end
+
+function M.get_diff_review()
+  registry.run("git_diff_review")
 end
 
 return M
