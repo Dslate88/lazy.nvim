@@ -54,11 +54,62 @@ local function open_response_window(buf, window_type)
   set_buffer_options(buf, RESPONSE_BUF_OPTS)
 end
 
-function M.display_response(response, window_type)
-  local buf = create_buffer()
-  local lines = vim.split(response or "", "\n")
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  open_response_window(buf, window_type)
+---Append a follow-up response to an existing response buffer.
+---@param buf number
+---@param text string
+function M.append_to_response(buf, text)
+  local all_lines = { "", "---", "" }
+  vim.list_extend(all_lines, vim.split(text or "", "\n"))
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  vim.api.nvim_buf_set_option(buf, "modifiable", true)
+  vim.api.nvim_buf_set_lines(buf, line_count, -1, false, all_lines)
+  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+end
+
+---Display a response in a new or existing buffer.
+---@param response string
+---@param window_type string
+---@param existing_buf number|nil  when set, appends to this buffer instead of creating a new one
+---@return number  the response buffer handle
+function M.display_response(response, window_type, existing_buf)
+  local buf
+
+  if existing_buf and vim.api.nvim_buf_is_valid(existing_buf) then
+    buf = existing_buf
+    M.append_to_response(buf, response)
+  else
+    buf = create_buffer()
+    local lines = vim.split(response or "", "\n")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    open_response_window(buf, window_type)
+    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+  end
+
+  return buf
+end
+
+---Bind the follow-up keymap on a response buffer.
+---Called by the registry after each turn; replaces any prior binding.
+---@param buf number
+---@param on_followup fun(input:string)
+function M.bind_followup(buf, on_followup)
+  vim.keymap.set("n", "<leader>f", function()
+    M.get_user_prompt({ prompt = "Follow-up:" }, function(input)
+      if input and input ~= "" then
+        on_followup(input)
+      end
+    end)
+  end, { buffer = buf, noremap = true, silent = true, desc = "Follow-up" })
+end
+
+---Bind the capture keymap on a response buffer.
+---Sends conversation history to the LLM for context extraction, appends result to .ai_context.md.
+---@param buf number
+---@param on_capture fun()
+function M.bind_capture(buf, on_capture)
+  vim.keymap.set("n", "<leader>e", function()
+    on_capture()
+  end, { buffer = buf, noremap = true, silent = true, desc = "Capture to context file" })
 end
 
 ---Prompt the user for input.

@@ -38,6 +38,42 @@ return {
         desc = "Git Diff",
       },
       {
+        "<leader>ao",
+        function()
+          require("user.ai_tools.scripts").rewrite_context()
+        end,
+        desc = "Organize Context File",
+      },
+      {
+        "<leader>ai",
+        function()
+          require("user.ai_tools.scripts").open_context_file()
+        end,
+        desc = "Open Context File",
+      },
+      {
+        "<leader>ae",
+        function()
+          require("user.ai_tools.scripts").extract_context()
+        end,
+        desc = "Extract Context",
+      },
+      {
+        "<leader>ak",
+        function()
+          require("user.ai_tools.scripts").keymap_query()
+        end,
+        desc = "Keymap Query",
+      },
+      {
+        "<leader>as",
+        function()
+          require("user.ai_tools.scripts").analyze_selection()
+        end,
+        desc = "Analyze Selection",
+        mode = { "n", "v" },
+      },
+      {
         "<leader>ap",
         function()
           require("user.prompt_gen").execute()

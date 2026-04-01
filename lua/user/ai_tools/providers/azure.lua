@@ -49,18 +49,19 @@ function M.send_request(prompt, settings, callback)
     return nil, err
   end
 
-  local system_message = merged_settings.system_message or config.default_system_message
   local url = merged_settings.endpoint
     .. "/openai/deployments/"
     .. merged_settings.deployment_id
     .. "/chat/completions?api-version=2024-12-01-preview"
 
+  local messages = merged_settings.messages or {
+    { role = "system", content = merged_settings.system_message or config.default_system_message },
+    { role = "user", content = prompt },
+  }
+
   local body = vim.json.encode({
     model = merged_settings.model,
-    messages = {
-      { role = "system", content = system_message },
-      { role = "user", content = prompt },
-    },
+    messages = messages,
   })
 
   local function handle(res)

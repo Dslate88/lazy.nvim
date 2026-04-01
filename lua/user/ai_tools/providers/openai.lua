@@ -40,12 +40,14 @@ function M.send_request(prompt, settings, callback)
     return nil, err
   end
 
+  local messages = settings.messages or {
+    { role = "system", content = settings.system_message or config.default_system_message },
+    { role = "user", content = prompt },
+  }
+
   local body = vim.json.encode({
     model = settings.model,
-    messages = {
-      { role = "system", content = settings.system_message or config.default_system_message },
-      { role = "user", content = prompt },
-    },
+    messages = messages,
   })
 
   local function handle(res)

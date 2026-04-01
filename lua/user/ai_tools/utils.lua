@@ -1,5 +1,57 @@
 local M = {}
 
+M.context_file_template = table.concat({
+  "# Project Context",
+  "",
+  "## Architecture",
+  "",
+  "## Key Decisions",
+  "",
+  "## Cross-repo Relationships",
+  "",
+  "## Conventions",
+  "",
+  "## Current Focus",
+  "",
+}, "\n")
+
+function M.find_context_file(start_dir)
+  local dir = start_dir or vim.fn.getcwd()
+  while true do
+    local candidate = dir .. "/.ai_context.md"
+    if vim.fn.filereadable(candidate) == 1 then
+      return candidate
+    end
+    local parent = vim.fn.fnamemodify(dir, ":h")
+    if parent == dir then
+      return nil
+    end
+    dir = parent
+  end
+end
+
+function M.find_or_default_context_path()
+  return M.find_context_file() or (vim.fn.getcwd() .. "/.ai_context.md")
+end
+
+function M.create_context_file(path)
+  local f = io.open(path, "w")
+  if f then
+    f:write(M.context_file_template)
+    f:close()
+  end
+end
+
+function M.append_to_file(path, content)
+  local f = io.open(path, "a")
+  if not f then
+    return nil, "Could not open file for appending: " .. path
+  end
+  f:write("\n" .. content)
+  f:close()
+  return true
+end
+
 function M.normalize_path(path)
   return path:gsub("\\", "/")
 end
