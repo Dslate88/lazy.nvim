@@ -17,6 +17,10 @@ M.defaults = {
       deployment_id = "gpt-4o",
       model = "gpt-4o",
     },
+    databricks_claude = {
+      api_key = os.getenv("DATABRICKS_TOKEN"),
+      host = os.getenv("DATABRICKS_HOST"),
+    },
   },
 }
 
