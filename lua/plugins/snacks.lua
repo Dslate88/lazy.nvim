@@ -1,3 +1,26 @@
+local function picker_to_harpoon(clear_first)
+  local picker = Snacks.picker.current or Snacks.picker.get()[1]
+  if not picker then
+    return Snacks.notify.warn("No active picker")
+  end
+  local items = picker:selected({ fallback = true })
+  picker:close()
+  local list = require("harpoon"):list()
+  if clear_first then
+    list:clear()
+  end
+  local before = list:length()
+  for _, item in ipairs(items) do
+    local path = Snacks.picker.util.path(item)
+    if path then
+      list:add(list.config.create_list_item(list.config, path))
+    end
+  end
+  local added = list:length() - before
+  local verb = clear_first and "replaced list with" or "added"
+  Snacks.notify(("Harpoon: %s %d file%s"):format(verb, added, added == 1 and "" or "s"))
+end
+
 return {
   -- TODO: build quickfix ai_tools script (similiar to harpoon_list)
   "snacks.nvim",
@@ -18,6 +41,16 @@ return {
         Snacks.picker.actions.qflist_all(picker)
       end,
       desc = "Send all picker items to quickfix",
+    },
+    {
+      "<leader>sh",
+      function() picker_to_harpoon(false) end,
+      desc = "Harpoon add selected picker files",
+    },
+    {
+      "<leader>sH",
+      function() picker_to_harpoon(true) end,
+      desc = "Harpoon replace list with selected picker files",
     },
     -- disable: pick files
     { "<leader><space>", false },
