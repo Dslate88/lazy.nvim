@@ -125,6 +125,7 @@ function M.get_user_prompt(opts, on_submit)
   vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   vim.api.nvim_buf_set_option(buf, "filetype", "text")
+  vim.b[buf].blink_disable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prompt, "" })
 
   local win = vim.api.nvim_open_win(buf, true, {
