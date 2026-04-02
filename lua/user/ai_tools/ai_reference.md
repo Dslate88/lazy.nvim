@@ -1,6 +1,6 @@
 # AI Tools Reference
 
-_Source of truth: `lua/plugins/ai-tools.lua`, `lua/user/ai_tools/scripts/registry.lua`, and `lua/plugins/snacks.lua`_
+_Source of truth: `lua/plugins/ai-tools.lua` and `lua/user/ai_tools/scripts/registry.lua`_
 
 ## Keymaps
 
@@ -81,7 +81,7 @@ _Source of truth: `lua/plugins/ai-tools.lua`, `lua/user/ai_tools/scripts/registr
 
 ---
 
-### `<leader>ao` — Organize Context File
+### `<leader>ao` — Rewrite Context File
 
 | Field                | Value              |
 | -------------------- | ------------------ |
@@ -108,12 +108,12 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 
 ### `<leader>ae` — Extract Context
 
-| Field                | Value                               |
-| -------------------- | ----------------------------------- |
-| **Script**           | `extract_context`                   |
-| **Window**           | split                               |
-| **Conversational**   | yes                                 |
-| **Context gathered** | `project_context`, `harpoon_files`  |
+| Field                | Value                              |
+| -------------------- | ---------------------------------- |
+| **Script**           | `extract_context`                  |
+| **Window**           | split                              |
+| **Conversational**   | yes                                |
+| **Context gathered** | `project_context`, `harpoon_files` |
 
 **What it does:** Analyzes harpoon-marked files against the existing project context and outputs only the new markdown content that should be appended — covering architectural decisions, design patterns, conventions, and cross-repo relationships not yet captured.
 
@@ -128,12 +128,12 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 
 ### `<leader>ak` — Keymap Query
 
-| Field                | Value                           |
-| -------------------- | ------------------------------- |
-| **Script**           | `keymap_query`                  |
-| **Window**           | popup                           |
-| **Conversational**   | no                              |
-| **Context gathered** | `user_prompt`, `config_files`   |
+| Field                | Value                         |
+| -------------------- | ----------------------------- |
+| **Script**           | `keymap_query`                |
+| **Window**           | popup                         |
+| **Conversational**   | no                            |
+| **Context gathered** | `user_prompt`, `config_files` |
 
 **What it does:** Prompts for a keymap question, then sends it along with the local `keymaps.lua` and all plugin specs (`lua/plugins/*.lua`) to a Neovim/LazyVim expert that answers with exact key combos and descriptions, including relevant LazyVim defaults.
 
@@ -143,12 +143,12 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 
 ### `<leader>as` — Analyze File
 
-| Field                | Value                         |
-| -------------------- | ----------------------------- |
-| **Script**           | `analyze_file`                |
-| **Window**           | split                         |
-| **Conversational**   | yes                           |
-| **Context gathered** | `user_prompt`, `active_file`  |
+| Field                | Value                        |
+| -------------------- | ---------------------------- |
+| **Script**           | `analyze_file`               |
+| **Window**           | split                        |
+| **Conversational**   | yes                          |
+| **Context gathered** | `user_prompt`, `active_file` |
 
 **What it does:** Prompts for a question about the currently active file, then sends the file contents to an expert code analyst that reasons through the question step by step without rewriting code unless explicitly asked.
 
@@ -165,9 +165,9 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 
 _(defined in `lua/plugins/snacks.lua`)_
 
-**What it does:** From an open snacks picker, takes all tab-selected files (falling back to the current item if none are selected) and appends them to the harpoon list.
+**What it does:** From an open Snacks picker, takes all tab-selected files (falling back to the current item if none are selected) and appends them to the harpoon list.
 
-**When to invoke:** When you want to build or extend a harpoon context set by selecting files in a snacks picker before running an AI workflow.
+**When to invoke:** When you want to build or extend a harpoon context set by selecting files in a Snacks picker before running an AI workflow.
 
 ---
 
@@ -175,9 +175,9 @@ _(defined in `lua/plugins/snacks.lua`)_
 
 _(defined in `lua/plugins/snacks.lua`)_
 
-**What it does:** From an open snacks picker, clears the harpoon list and replaces it with the tab-selected files (falling back to the current item if none are selected).
+**What it does:** From an open Snacks picker, clears the harpoon list and replaces it with the tab-selected files (falling back to the current item if none are selected).
 
-**When to invoke:** When you want to swap your entire harpoon context to a new set of files selected in a snacks picker.
+**When to invoke:** When you want to swap your entire harpoon context to a new set of files selected in a Snacks picker.
 
 ---
 
@@ -201,9 +201,9 @@ _(external module — `user.prompt_gen.execute()`)_
 
 ---
 
-### `<leader>aR` — AI Reference
+### `<leader>aR` — View Keymap Details
 
-_(external module — `scripts.open_reference()`, not a registry entry)_
+_(external module — `scripts.view_keymap_details()`, not a registry entry)_
 
 **What it does:** Opens `lua/user/ai_tools/ai_reference.md` (this file) in a vertical split.
 
