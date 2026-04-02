@@ -1,8 +1,9 @@
 local M = {}
 
-local DEFAULT_AWS_VERSION = "6.38.0" -- update when upgrading provider
+local DEFAULT_AWS_VERSION = "6.38.0"
 local LOCK_FILE_NAME = ".terraform.lock.hcl"
-local BASE_URL = "https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v%s/website/docs/%s/%s.html.markdown"
+local BASE_URL =
+  "https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v%s/website/docs/%s/%s.html.markdown"
 
 local function find_lock_file(start_dir)
   local dir = start_dir or vim.fn.getcwd()
@@ -75,22 +76,18 @@ local function strip_frontmatter(text)
 end
 
 local function fetch_and_display(url, fallback_url, label)
-  vim.system(
-    { "curl", "--silent", "--fail", "--location", "--max-time", "10", url },
-    { text = true },
-    function(obj)
-      vim.schedule(function()
-        if obj.code == 0 and obj.stdout and obj.stdout ~= "" then
-          local content = strip_frontmatter(obj.stdout)
-          require("user.ai_tools.ui").display_response(content, "split")
-        elseif fallback_url then
-          fetch_and_display(fallback_url, nil, label)
-        else
-          vim.notify("Terraform docs not found: " .. label, vim.log.levels.WARN)
-        end
-      end)
-    end
-  )
+  vim.system({ "curl", "--silent", "--fail", "--location", "--max-time", "10", url }, { text = true }, function(obj)
+    vim.schedule(function()
+      if obj.code == 0 and obj.stdout and obj.stdout ~= "" then
+        local content = strip_frontmatter(obj.stdout)
+        require("user.ai_tools.ui").display_response(content, "split")
+      elseif fallback_url then
+        fetch_and_display(fallback_url, nil, label)
+      else
+        vim.notify("Terraform docs not found: " .. label, vim.log.levels.WARN)
+      end
+    end)
+  end)
 end
 
 function M.lookup()

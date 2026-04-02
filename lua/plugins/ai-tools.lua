@@ -87,6 +87,13 @@ return {
         end,
         desc = "Prompt Gen",
       },
+      {
+        "<leader>aU",
+        function()
+          require("user.ai_tools.usage").summary()
+        end,
+        desc = "Usage Summary",
+      },
     },
     config = function(_, opts)
       require("user.ai_tools.config").setup(opts)

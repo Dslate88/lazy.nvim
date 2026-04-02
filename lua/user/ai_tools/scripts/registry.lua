@@ -4,6 +4,7 @@ local config = require("user.ai_tools.config")
 local ui = require("user.ai_tools.ui")
 local logger = require("user.ai_tools.logger")
 local utils = require("user.ai_tools.utils")
+local usage = require("user.ai_tools.usage")
 
 local M = {}
 
@@ -209,6 +210,7 @@ end
 ---@param action string
 ---@param opts table|nil  { initial_state: table|nil }
 function M.run(action, opts)
+  usage.record(action)
   opts = opts or {}
   local entry = get_entry(action)
   local state = vim.deepcopy(opts.initial_state or {})
