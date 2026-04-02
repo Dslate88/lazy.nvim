@@ -43,14 +43,14 @@ return {
       desc = "Send all picker items to quickfix",
     },
     {
-      "<leader>sh",
+      "<leader>ah",
       function() picker_to_harpoon(false) end,
-      desc = "Harpoon add selected picker files",
+      desc = "Harpoon add from picker",
     },
     {
-      "<leader>sH",
+      "<leader>aH",
       function() picker_to_harpoon(true) end,
-      desc = "Harpoon replace list with selected picker files",
+      desc = "Harpoon replace from picker",
     },
     -- disable: pick files
     { "<leader><space>", false },
@@ -71,7 +71,5 @@ return {
     -- disable: git stashes
     { "<leader>gS", false },
 
-    -- change a keymap
-    -- { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
   },
 }
