@@ -12,7 +12,7 @@ function M.log(message, level)
 		return
 	end
 
-	file:write(log_entry .. "\n")
+	file:write(log_entry .. "\n\n")
 	file:close()
 
 	if vim and vim.notify then

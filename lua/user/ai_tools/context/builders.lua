@@ -4,8 +4,16 @@ local marked = require("user.ai_tools.harpoon")
 
 local M = {}
 
-local function file_block(path, content)
-  return "FILE NAME BEGIN: " .. path .. "\nFILE CONTENT BEGIN:\n" .. content .. "\nFILE CONTENT END\n"
+local function file_block(path, content, index, lines_range)
+  local lines_tag = lines_range and string.format("<lines>%s</lines>\n", lines_range) or ""
+  return string.format(
+    '<file index="%d">\n<source>%s</source>\n%s<file_content>\n%s\n</file_content>\n</file>',
+    index, path, lines_tag, content
+  )
+end
+
+local function wrap_files_block(content)
+  return string.format("<files>\n%s\n</files>", content)
 end
 
 -- opts: prompt (string), allow_empty (bool), save_as (string)
@@ -40,17 +48,17 @@ function M.harpoon_files(opts, state, cb)
   local chunks = {}
   local meta = { files = files }
 
-  for _, file in ipairs(files) do
+  for i, file in ipairs(files) do
     local content, err = utils.read_file(file.filename)
     if not content then
       cb("Error reading file: " .. (err or "unknown error"))
       return
     end
-    table.insert(chunks, file_block(file.filename, content))
+    table.insert(chunks, file_block(file.filename, content, i))
   end
 
   cb(nil, {
-    prompt = table.concat(chunks, "\n"),
+    prompt = wrap_files_block(table.concat(chunks, "\n")),
     meta = meta,
   })
 end
@@ -74,14 +82,8 @@ function M.git_diff(opts, state, cb)
       return
     end
 
-    local prompt = stdout
-
     cb(nil, {
-      prompt = table.concat({
-        "GIT DIFF BEGIN",
-        prompt,
-        "GIT DIFF END",
-      }, "\n"),
+      prompt = "<git_diff>\n" .. stdout .. "\n</git_diff>",
       meta = {
         git_cmd = cmd,
         include_unstaged = include_unstaged,
@@ -95,11 +97,13 @@ end
 function M.config_files(opts, _state, cb)
   local chunks = {}
   local all_paths = {}
+  local idx = 0
 
   for _, p in ipairs(opts.paths or {}) do
     local content = utils.read_file(p)
     if content then
-      table.insert(chunks, file_block(p, content))
+      idx = idx + 1
+      table.insert(chunks, file_block(p, content, idx))
       table.insert(all_paths, p)
     end
   end
@@ -107,14 +111,15 @@ function M.config_files(opts, _state, cb)
     for _, p in ipairs(vim.fn.glob(pattern, false, true)) do
       local content = utils.read_file(p)
       if content then
-        table.insert(chunks, file_block(p, content))
+        idx = idx + 1
+        table.insert(chunks, file_block(p, content, idx))
         table.insert(all_paths, p)
       end
     end
   end
 
   cb(nil, {
-    prompt = table.concat(chunks, "\n"),
+    prompt = wrap_files_block(table.concat(chunks, "\n")),
     meta = { config_files = all_paths },
   })
 end
@@ -133,33 +138,9 @@ function M.active_file(opts, state, cb)
     return
   end
   cb(nil, {
-    prompt = file_block(filename, table.concat(lines, "\n")),
+    prompt = wrap_files_block(file_block(filename, table.concat(lines, "\n"), 1)),
     meta = { file = filename },
   })
-end
-
--- opts: (none — reads state.sel_buf, state.sel_start, state.sel_end set by the keymap)
-function M.visual_selection(opts, state, cb)
-  local buf = state.sel_buf
-  local start_line = state.sel_start
-  local end_line = state.sel_end
-
-  if not buf or not start_line or not end_line then
-    cb("No visual selection captured.")
-    return
-  end
-
-  local lines = vim.api.nvim_buf_get_lines(buf, start_line - 1, end_line, false)
-  if #lines == 0 then
-    cb("Visual selection is empty.")
-    return
-  end
-
-  local filename = vim.api.nvim_buf_get_name(buf)
-  local header = string.format("SELECTION BEGIN: %s (lines %d-%d)", filename, start_line, end_line)
-  local block = header .. "\n" .. table.concat(lines, "\n") .. "\nSELECTION END\n"
-
-  cb(nil, { prompt = block, meta = { sel_file = filename, sel_start = start_line, sel_end = end_line } })
 end
 
 -- opts: (none) — reads .ai_context.md into the user turn (for rewrite workflows)

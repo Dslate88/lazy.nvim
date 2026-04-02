@@ -42,7 +42,7 @@ return {
         function()
           require("user.ai_tools.scripts").rewrite_context()
         end,
-        desc = "Organize Context File",
+        desc = "Rewrite Context File",
       },
       {
         "<leader>ai",
@@ -89,9 +89,9 @@ return {
       {
         "<leader>aR",
         function()
-          require("user.ai_tools.scripts").open_reference()
+          require("user.ai_tools.scripts").view_keymap_details()
         end,
-        desc = "AI Reference",
+        desc = "View Keymap Details",
       },
       {
         "<leader>aU",

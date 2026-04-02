@@ -48,7 +48,7 @@ function M.rewrite_context()
   registry.run("rewrite_context")
 end
 
-function M.open_reference()
+function M.view_keymap_details()
   local path = vim.fn.stdpath("config") .. "/lua/user/ai_tools/ai_reference.md"
   vim.cmd("vsplit " .. vim.fn.fnameescape(path))
 end

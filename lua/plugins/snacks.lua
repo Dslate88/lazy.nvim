@@ -28,6 +28,7 @@ return {
     dashboard = { enabled = false },
     animate = { enabled = false },
     scroll = { enabled = false },
+    explorer = { enabled = false },
   },
   keys = {
     -- NOTE: when picker is open CTRL + Q sends all files "tab" actioned to the qflist

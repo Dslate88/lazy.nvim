@@ -38,7 +38,12 @@ local registry = {
       { type = "user_prompt", prompt = "Enter the goal", save_as = "goal" },
       { type = "harpoon_files" },
     },
-    format_prompt = concat_chunks,
+    format_prompt = function(chunks, state)
+      -- files first, goal last (Anthropic long-context recommendation)
+      local files_block = chunks[#chunks] or ""
+      local goal = state.goal or ""
+      return files_block .. "\n\n" .. goal
+    end,
   },
   git_diff_review = {
     id = "git_diff_review",
@@ -59,7 +64,11 @@ local registry = {
       },
       { type = "git_diff" },
     },
-    format_prompt = concat_chunks,
+    format_prompt = function(chunks, state)
+      local diff_block = chunks[#chunks] or ""
+      local goal = state.goal or ""
+      return diff_block .. (goal ~= "" and ("\n\n" .. goal) or "")
+    end,
   },
   keymap_query = {
     id = "keymap_query",
@@ -83,7 +92,7 @@ Keep your answer concise and direct.]],
       },
     },
     format_prompt = function(chunks, state)
-      return "QUESTION: " .. (state.question or "") .. "\n\n" .. concat_chunks(chunks)
+      return chunks[#chunks] .. "\n\nQUESTION: " .. (state.question or "")
     end,
   },
   design_patterns = {
@@ -105,7 +114,10 @@ Keep your answer concise and direct.]],
       { type = "user_prompt", prompt = "Enter focus areas (optional):", save_as = "focus", allow_empty = true },
       { type = "harpoon_files" },
     },
-    format_prompt = concat_chunks,
+    format_prompt = function(chunks, state)
+      -- files first; focus is already in system message so drop it from prompt
+      return chunks[#chunks] or ""
+    end,
   },
   rewrite_context = {
     id = "rewrite_context",
@@ -142,12 +154,12 @@ Walk through your reasoning: explain what you kept, what you changed, and why. T
     },
     format_prompt = function(chunks, state)
       return table.concat({
-        "Analyze the code files below.",
+        concat_chunks(chunks),
+        "",
+        "Analyze the code files above.",
         "Identify what should be ADDED to the project context file based on what is evident in the code but not yet captured in the existing project context (provided in the system message).",
         "Look for: architectural decisions, design patterns, cross-cutting concerns, conventions, and cross-repo relationships.",
         "Output ONLY the new markdown content to append. Be concise. Do not repeat anything already captured.",
-        "",
-        concat_chunks(chunks),
       }, "\n")
     end,
   },
@@ -162,7 +174,7 @@ Walk through your reasoning: explain what you kept, what you changed, and why. T
       { type = "active_file" },
     },
     format_prompt = function(chunks, state)
-      return "QUESTION: " .. (state.question or "") .. "\n\n" .. concat_chunks(chunks)
+      return chunks[#chunks] .. "\n\nQUESTION: " .. (state.question or "")
     end,
   },
 }
@@ -254,8 +266,7 @@ function M.run(action, opts)
         system_message = system_message,
       }
 
-      local ok, encoded = pcall(vim.json.encode, log_data)
-      logger.info(ok and encoded or ("registry.run payload encode failed: " .. tostring(encoded)))
+      logger.info(vim.inspect(log_data))
     end
 
     local base_runner_opts = {

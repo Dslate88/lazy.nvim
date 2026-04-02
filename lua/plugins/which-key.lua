@@ -13,14 +13,14 @@ return {
         { "<leader>ar", icon = "󰓡" }, -- Harpoon Goal
         { "<leader>ad", icon = "󰙨" }, -- Design Patterns
         { "<leader>ag", icon = "󰊢" }, -- Git Diff
-        { "<leader>ao", icon = "󰑓" }, -- Organize Context File
+        { "<leader>ao", icon = "󰑓" }, -- Rewrite Context File
         { "<leader>ai", icon = "󰈙" }, -- Open Context File
         { "<leader>ae", icon = "󰄾" }, -- Extract Context
         { "<leader>ak", icon = "󰌌" }, -- Keymap Query
         { "<leader>as", icon = "󰍉" }, -- Analyze File
         { "<leader>at", icon = "󱁢" }, -- Terraform Docs
         { "<leader>ap", icon = "󱜻" }, -- Prompt Gen
-        { "<leader>aR", icon = "󰋼" }, -- AI Reference
+        { "<leader>aR", icon = "󰋼" }, -- View Keymap Details
         { "<leader>aU", icon = "󰻿" }, -- Usage Summary
         { "<leader>ah", icon = "󰐕" }, -- Harpoon add from picker
         { "<leader>aH", icon = "󰮍" }, -- Harpoon replace from picker
