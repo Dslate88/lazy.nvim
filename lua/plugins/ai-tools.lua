@@ -74,6 +74,13 @@ return {
         mode = { "n", "v" },
       },
       {
+        "<leader>at",
+        function()
+          require("user.terraform_docs").lookup()
+        end,
+        desc = "Terraform Docs",
+      },
+      {
         "<leader>ap",
         function()
           require("user.prompt_gen").execute()
