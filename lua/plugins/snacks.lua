@@ -28,7 +28,7 @@ return {
     dashboard = { enabled = false },
     animate = { enabled = false },
     scroll = { enabled = false },
-    explorer = { enabled = false },
+    explorer = { enabled = true },
   },
   keys = {
     -- NOTE: when picker is open CTRL + Q sends all files "tab" actioned to the qflist
@@ -45,12 +45,16 @@ return {
     },
     {
       "<leader>ah",
-      function() picker_to_harpoon(false) end,
+      function()
+        picker_to_harpoon(false)
+      end,
       desc = "Harpoon add from picker",
     },
     {
       "<leader>aH",
-      function() picker_to_harpoon(true) end,
+      function()
+        picker_to_harpoon(true)
+      end,
       desc = "Harpoon replace from picker",
     },
     -- disable: pick files
@@ -71,6 +75,5 @@ return {
 
     -- disable: git stashes
     { "<leader>gS", false },
-
   },
 }
