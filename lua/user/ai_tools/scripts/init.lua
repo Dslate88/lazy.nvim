@@ -26,14 +26,8 @@ function M.keymap_query()
   registry.run("keymap_query")
 end
 
-function M.analyze_selection()
-  -- capture selection coordinates before any prompt UI opens and changes the context
-  local sel_buf = vim.api.nvim_get_current_buf()
-  local sel_start = vim.fn.line("'<")
-  local sel_end = vim.fn.line("'>")
-  registry.run("analyze_selection", {
-    initial_state = { sel_buf = sel_buf, sel_start = sel_start, sel_end = sel_end },
-  })
+function M.analyze_file()
+  registry.run("analyze_file")
 end
 
 function M.open_context_file()
@@ -52,6 +46,11 @@ end
 
 function M.rewrite_context()
   registry.run("rewrite_context")
+end
+
+function M.open_reference()
+  local path = vim.fn.stdpath("config") .. "/lua/user/ai_tools/ai_reference.md"
+  vim.cmd("vsplit " .. vim.fn.fnameescape(path))
 end
 
 return M

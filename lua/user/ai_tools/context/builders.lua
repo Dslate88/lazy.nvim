@@ -119,6 +119,25 @@ function M.config_files(opts, _state, cb)
   })
 end
 
+-- opts: (none) — reads the entire active buffer (captures unsaved changes)
+function M.active_file(opts, state, cb)
+  local buf = vim.api.nvim_get_current_buf()
+  local filename = vim.api.nvim_buf_get_name(buf)
+  if filename == "" then
+    cb("No file associated with the current buffer.")
+    return
+  end
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  if #lines == 0 then
+    cb("Current buffer is empty.")
+    return
+  end
+  cb(nil, {
+    prompt = file_block(filename, table.concat(lines, "\n")),
+    meta = { file = filename },
+  })
+end
+
 -- opts: (none — reads state.sel_buf, state.sel_start, state.sel_end set by the keymap)
 function M.visual_selection(opts, state, cb)
   local buf = state.sel_buf

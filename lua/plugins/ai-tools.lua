@@ -68,10 +68,9 @@ return {
       {
         "<leader>as",
         function()
-          require("user.ai_tools.scripts").analyze_selection()
+          require("user.ai_tools.scripts").analyze_file()
         end,
-        desc = "Analyze Selection",
-        mode = { "n", "v" },
+        desc = "Analyze File",
       },
       {
         "<leader>at",
@@ -86,6 +85,13 @@ return {
           require("user.prompt_gen").execute()
         end,
         desc = "Prompt Gen",
+      },
+      {
+        "<leader>aR",
+        function()
+          require("user.ai_tools.scripts").open_reference()
+        end,
+        desc = "AI Reference",
       },
       {
         "<leader>aU",

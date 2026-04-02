@@ -151,15 +151,15 @@ Walk through your reasoning: explain what you kept, what you changed, and why. T
       }, "\n")
     end,
   },
-  analyze_selection = {
-    id = "analyze_selection",
-    title = "Analyze Selection",
+  analyze_file = {
+    id = "analyze_file",
+    title = "Analyze File",
     conversational = true,
-    system = "You are an expert code analyst. Think step by step and help the user reason about the provided code selection. Do not rewrite code unless explicitly asked.",
+    system = "You are an expert code analyst. Think step by step and help the user reason about the provided file. Do not rewrite code unless explicitly asked.",
     window = "split",
     context = {
-      { type = "user_prompt", prompt = "What do you want to know about this selection?", save_as = "question" },
-      { type = "visual_selection" },
+      { type = "user_prompt", prompt = "What do you want to know about this file?", save_as = "question" },
+      { type = "active_file" },
     },
     format_prompt = function(chunks, state)
       return "QUESTION: " .. (state.question or "") .. "\n\n" .. concat_chunks(chunks)
