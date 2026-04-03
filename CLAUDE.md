@@ -38,8 +38,8 @@ This is the most complex part of the config — a full AI assistant framework:
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `config.lua`           | Defaults: provider (`openai`), model, timeout, debug flag                                                                                   |
 | `providers/`           | Pluggable AI backends: `openai.lua`, `azure.lua`, `provider_factory.lua`                                                                    |
-| `context/builders.lua` | Async context collectors: `user_prompt`, `harpoon_files`, `git_diff`, `config_files`, `active_file`, `project_context`                      |
-| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, design_patterns, keymap_query, analyze_file); also the `run()` entry point. Workflows with `conversational = true` (harpoon_review, git_diff_review, design_patterns, analyze_file) bind `<leader>f` for follow-ups. |
+| `context/builders.lua` | Async context collectors: `user_prompt`, `harpoon_files`, `git_diff`, `git_log`, `config_files`, `active_file`, `project_context`              |
+| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, commit_message, branch_diff_review, design_patterns, keymap_query, analyze_file); also the `run()` entry point. Workflows with `conversational = true` (harpoon_review, git_diff_review, branch_diff_review, design_patterns, analyze_file) bind `<leader>f` for follow-ups. |
 | `scripts/init.lua`     | Public API shim — thin wrappers that call `registry.run(action)`                                                                            |
 | `runner.lua`           | Executes requests via selected provider                                                                                                     |
 | `ui.lua`               | Popup/split windows for input and responses; binds `<leader>f` follow-up in response buffers                                                |
@@ -77,6 +77,8 @@ This is the most complex part of the config — a full AI assistant framework:
 | `<leader>ar` | Review harpoon-marked files with AI                               |
 | `<leader>ad` | Design pattern analysis of harpoon-marked files                   |
 | `<leader>ag` | Review staged git diff with AI                                    |
+| `<leader>aG` | Generate a conventional commit message from staged diff           |
+| `<leader>ab` | Review full branch diff (origin/main...HEAD) with AI              |
 | `<leader>as` | Analyze current file with AI                                      |
 | `<leader>ak` | Ask AI about available keymaps                                    |
 | `<leader>aR` | View keymap details (opens `ai_reference.md`)                     |

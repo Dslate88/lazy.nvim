@@ -63,70 +63,68 @@ local BYTES_PER_TOKEN = 4
 
 local ARCH_SYSTEM_PROMPT = [[
 You are a senior software architect. You will be given the source files of a codebase.
-Analyze them and produce a single architecture.md document with EXACTLY these sections in order:
+Produce a concise architecture.md optimized for LLM consumption — this document will be injected as context when an AI reviews code from this project.
+
+HARD LIMIT: Stay under 600 words. Every sentence must earn its place.
+
+Focus on what CANNOT be inferred by reading individual source files: architectural intent, design decisions, cross-cutting conventions, and gotchas.
+
+Use this exact structure:
 
 # Architecture
 
-## 1. Overview
-Brief description of what this system does and its scope.
+## Purpose
+1-2 sentences: what this system does and its scope.
 
-## 2. System Diagram
-A Mermaid flowchart showing the major components and their relationships.
-Mermaid syntax rules you MUST follow to avoid parse errors:
-- Node IDs must be simple alphanumeric (no spaces, no parens): use `A`, `ecr`, `taskDef`, etc.
-- If a label needs spaces or parentheses, separate ID from label: `ecr["ECR Repository (pre-existing)"]`
-- Subgraph titles with spaces or special characters MUST use the id+label form: `subgraph consumerRepo["Consumer Repo (Terraform)"]`
-- Use `<br/>` for line breaks inside labels, never `\n`
-- Draw edges between node IDs only, never between subgraph titles
-- Example of correct syntax: `subgraph aws["AWS Resources"]` then `ecs["ECS Service"] --> alb["Load Balancer"]`
+## Key Decisions
+Bullet points. Each: the decision, then why it was made (constraint, tradeoff, or requirement that drove it).
 
-## 3. Key Components
-A table or bulleted list of the main modules/services/packages with a one-line description of each.
+## Module Relationships
+How the major components connect and depend on each other. Only describe relationships — do not describe what individual modules do (the LLM can read the code).
 
-## 4. Data Flow
-How data moves through the system. Use a Mermaid sequence diagram if the flow is request/response; otherwise prose is fine.
+## Conventions
+Patterns and rules the codebase follows that are not obvious from reading a single file. Include naming conventions, structural patterns, and implicit contracts between modules.
 
-## 5. Key Design Decisions
-Inline ADRs or bullet points covering the notable architectural choices and their rationale.
+## Anti-patterns / Gotchas
+Things that look tempting but are wrong in this codebase, and why. Known footguns, implicit coupling, or constraints a newcomer would miss.
 
-## 6. External Dependencies
-Libraries, services, and APIs the system depends on (name + purpose).
+## External Integrations
+Only non-obvious external dependencies. Skip standard libraries and common frameworks — only list services, APIs, or tools whose role in the system is not self-evident.
 
-## 7. Cross-repo Dependencies
-Any dependencies on code outside this repository. Write "None identified." if there are none.
+## Cross-repo Dependencies
+Any dependencies on code outside this repository — shared libraries, sibling repos, or upstream services this repo calls. Write "None identified." if there are none.
 
 Output ONLY the markdown document. No preamble, no explanation, no code fences around the whole document.
+Prefer terse bullet points over prose. If a section has nothing worth noting, write "None." and move on.
 ]]
 
 local ROLLUP_SYSTEM_PROMPT = [[
-You are a senior software architect. You will be given the architecture.md documents for several related repositories.
-Synthesize them into a single unified architecture.md covering the entire system, with EXACTLY these sections in order:
+You are a senior software architect. You will be given architecture.md documents for several related repositories.
+Synthesize them into a single architecture.md optimized for LLM consumption.
+
+HARD LIMIT: Stay under 800 words.
+
+Use this exact structure:
 
 # Architecture (System Overview)
 
-## 1. Overview
-What the overall system does and how the repositories relate to each other.
+## Purpose
+What the overall system does and how the repositories relate.
 
-## 2. System Diagram
-A Mermaid flowchart showing all repos as top-level nodes plus their key internal components and inter-repo relationships.
-Apply the same Mermaid syntax rules: node IDs must be simple alphanumeric, labels with spaces/parens use `id["Label (text)"]`, subgraphs use `subgraph id["Title"]`, line breaks use `<br/>` not `\n`, edges reference node IDs only.
+## Key Decisions
+Cross-cutting architectural decisions spanning multiple repos, plus repo-specific decisions worth calling out. Each: the decision, then why.
 
-## 3. Key Components
-A table or bulleted list covering the major components across all repos, labelled by repo.
+## Inter-repo Relationships
+How repos depend on each other — API calls, shared data stores, shared libraries, deployment order.
 
-## 4. Data Flow
-How data flows between and within the repos. Use a Mermaid sequence diagram if appropriate.
+## Conventions
+Cross-repo patterns, naming rules, and structural norms.
 
-## 5. Key Design Decisions
-Cross-cutting architectural decisions that span multiple repos, plus repo-specific decisions worth calling out.
-
-## 6. External Dependencies
-All external libraries, services, and APIs across all repos (name + purpose + which repo uses it).
-
-## 7. Cross-repo Dependencies
-Explicit description of which repos depend on which, and how (API calls, shared libraries, shared data stores, etc.).
+## Anti-patterns / Gotchas
+System-wide footguns, implicit coupling between repos, or constraints a newcomer would miss.
 
 Output ONLY the markdown document. No preamble, no explanation, no code fences around the whole document.
+Prefer terse bullet points over prose. If a section has nothing worth noting, write "None." and move on.
 ]]
 
 -- ─── File filtering ───────────────────────────────────────────────────────────
@@ -308,20 +306,9 @@ local function timestamp_header()
   return string.format("<!-- arch_gen: %s -->\n", os.date("%Y-%m-%d %H:%M %Z"))
 end
 
--- file_entries: { {path, tokens}, ... }  (tokens optional for rollup inputs)
-local function source_files_footer(file_entries, repo_root)
-  local lines = { "\n---\n\n## Source Files\n" }
-  for _, entry in ipairs(file_entries) do
-    local display = repo_root and entry.path:gsub("^" .. vim.pesc(repo_root) .. "/", "") or entry.path
-    local tok_note = entry.tokens and string.format(" — ~%d tok", entry.tokens) or ""
-    table.insert(lines, string.format("- `%s`%s", display, tok_note))
-  end
-  return table.concat(lines, "\n")
-end
-
--- Writes the final architecture.md to disk (timestamp + LLM response + source footer).
+-- Writes the final architecture.md to disk (timestamp + LLM response).
 -- cb(err, out_path)
-local function write_arch_file(out_path, response, file_entries, repo_root, cb)
+local function write_arch_file(out_path, response, cb)
   local f = io.open(out_path, "w")
   if not f then
     cb("Could not write to " .. out_path, nil)
@@ -329,7 +316,6 @@ local function write_arch_file(out_path, response, file_entries, repo_root, cb)
   end
   f:write(timestamp_header())
   f:write(response)
-  f:write(source_files_footer(file_entries, repo_root))
   f:write("\n")
   f:close()
   vim.notify("[arch_gen] Done: " .. vim.fn.fnamemodify(out_path, ":~:."))
@@ -388,7 +374,7 @@ local function generate_arch_for_repo(repo_path, file_entries, cb)
       cb(err, nil)
       return
     end
-    write_arch_file(repo_path .. "/architecture.md", response, file_entries, repo_path, function(write_err, out_path)
+    write_arch_file(repo_path .. "/architecture.md", response, function(write_err, out_path)
       if write_err then
         vim.notify("[arch_gen] " .. write_err, vim.log.levels.ERROR)
         cb(write_err, nil)
@@ -403,7 +389,6 @@ end
 
 local function generate_rollup(root, sub_arch_paths, cb)
   local repo_blocks = {}
-  local input_entries = {}
   for _, arch_path in ipairs(sub_arch_paths) do
     local content = utils.read_file(arch_path)
     if content then
@@ -411,11 +396,6 @@ local function generate_rollup(root, sub_arch_paths, cb)
         '<repo path="%s">\n<content>\n%s\n</content>\n</repo>',
         arch_path, content
       ))
-      local size = vim.fn.getfsize(arch_path)
-      table.insert(input_entries, {
-        path = arch_path,
-        tokens = size > 0 and math.ceil(size / BYTES_PER_TOKEN) or nil,
-      })
     end
   end
   local combined = table.concat(repo_blocks, "\n\n")
@@ -426,7 +406,7 @@ local function generate_rollup(root, sub_arch_paths, cb)
       if cb then cb(err, nil) end
       return
     end
-    write_arch_file(root .. "/architecture.md", response, input_entries, root, function(write_err, out_path)
+    write_arch_file(root .. "/architecture.md", response, function(write_err, out_path)
       if write_err then
         vim.notify("[arch_gen] " .. write_err, vim.log.levels.ERROR)
         if cb then cb(write_err, nil) end
