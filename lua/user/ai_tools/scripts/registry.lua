@@ -128,14 +128,13 @@ Ground your response in the project architecture context if provided.]],
     window = "split",
     context = {
       { type = "project_context" },
+      { type = "git_log" },
       {
         type = "git_diff",
         git_cmd = { "git", "diff", "origin/main...HEAD", "--no-color" },
       },
     },
-    format_prompt = function(chunks, _state)
-      return chunks[#chunks] or ""
-    end,
+    format_prompt = concat_chunks,
   },
   keymap_query = {
     id = "keymap_query",

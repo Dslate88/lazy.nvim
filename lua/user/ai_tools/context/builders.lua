@@ -143,6 +143,17 @@ function M.active_file(opts, state, cb)
   })
 end
 
+-- opts: git_cmd (table|nil), cwd (string|nil)
+function M.git_log(opts, _state, cb)
+  local cmd = opts.git_cmd or { "git", "log", "--oneline", "-20" }
+  vim.system(cmd, { text = true, cwd = opts.cwd }, function(obj)
+    if obj.code ~= 0 or not obj.stdout or obj.stdout == "" then
+      return cb(nil, { prompt = "" })
+    end
+    cb(nil, { prompt = "<git_log>\n" .. obj.stdout .. "</git_log>" })
+  end)
+end
+
 -- opts: (none)
 function M.project_context(opts, state, cb)
   local path = utils.find_arch_file()
