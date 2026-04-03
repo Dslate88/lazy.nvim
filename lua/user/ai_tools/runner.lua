@@ -12,9 +12,7 @@ local M = {}
 ---  - provider: string|nil
 ---  - window_type: string|nil
 ---  - timeout: number|nil
----  - response_buf: number|nil           existing buffer to append a follow-up into
 ---  - on_success: fun(response:string, raw:table)|nil
----  - on_conversation_update: fun(messages:table, response_buf:number)|nil
 function M.run(opts)
   local cfg = config.get_config()
   local provider_name = opts.provider or cfg.default_provider
@@ -60,15 +58,7 @@ function M.run(opts)
       end
 
       local window_type = opts.window_type or cfg.window_type
-      local response_buf = ui.display_response(response, window_type, opts.response_buf)
-
-      local updated_messages = vim.list_extend(vim.deepcopy(outgoing_messages), {
-        { role = "assistant", content = response },
-      })
-
-      if opts.on_conversation_update then
-        opts.on_conversation_update(updated_messages, response_buf)
-      end
+      local response_buf = ui.display_response(response, window_type)
 
       if opts.on_success then
         opts.on_success(response, result)

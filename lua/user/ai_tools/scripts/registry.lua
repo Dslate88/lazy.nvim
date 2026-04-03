@@ -27,7 +27,6 @@ If the question is ambiguous, state your interpretation before answering.]],
   harpoon_review = {
     id = "harpoon_review",
     title = "Harpoon Review",
-    conversational = true,
     system = [[You are an expert code reviewer.
 You will be given one or more source files. The user will state a specific goal in their message.
 
@@ -54,7 +53,6 @@ Format: use markdown headers to separate concerns. Lead with a short summary par
   git_diff_review = {
     id = "git_diff_review",
     title = "Git Diff Review",
-    conversational = true,
     system = [[You are a senior software engineer reviewing staged code changes.
 You will be given a git diff and optionally a review focus from the user.
 
@@ -112,7 +110,6 @@ Rules:
   branch_diff_review = {
     id = "branch_diff_review",
     title = "Branch Diff Review",
-    conversational = true,
     system = [[You are a senior software engineer reviewing a feature branch.
 You will be given the full diff between origin/main and the current branch HEAD.
 
@@ -164,7 +161,6 @@ Keep your answer concise and direct.]],
   design_patterns = {
     id = "design_patterns",
     title = "Design Patterns",
-    conversational = true,
     system = function(state)
       local focus_line = (state.focus and state.focus ~= "")
         and ("\n\nFocus areas for this session: " .. state.focus)
@@ -194,7 +190,6 @@ Adapt your recommendations to the idioms and conventions of whatever language th
   analyze_file = {
     id = "analyze_file",
     title = "Analyze File",
-    conversational = true,
     system = [[You are an expert software engineer.
 You will be given a source file and a specific question about it.
 
@@ -238,7 +233,7 @@ local function run_builders(entry, idx, state, chunks, meta, cb)
     return
   end
 
-  builder(vim.tbl_deep_extend("force", {}, item), state, function(err, result)
+  builder(vim.tbl_extend("force", {}, item, { action_id = entry.id }), state, function(err, result)
     if err then
       cb(err)
       return
@@ -317,28 +312,9 @@ function M.run(action, opts)
       timeout = entry.timeout or cfg.timeout,
     }
 
-    local bind_followup
-    bind_followup = function(history, response_buf)
-      ui.bind_followup(response_buf, function(user_input)
-        local new_messages = vim.list_extend(vim.deepcopy(history), {
-          { role = "user", content = user_input },
-        })
-        runner.run(vim.tbl_extend("force", base_runner_opts, {
-          messages = new_messages,
-          response_buf = response_buf,
-          on_conversation_update = function(updated_history, buf)
-            bind_followup(updated_history, buf)
-          end,
-        }))
-      end)
-    end
-
     runner.run(vim.tbl_extend("force", base_runner_opts, {
       prompt = prompt,
       system_message = system_message,
-      on_conversation_update = entry.conversational and function(history, response_buf)
-        bind_followup(history, response_buf)
-      end or nil,
     }))
   end)
 end

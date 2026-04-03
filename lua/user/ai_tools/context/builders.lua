@@ -21,6 +21,7 @@ function M.user_prompt(opts, state, cb)
   local label = opts.prompt or "Enter input:"
   ui.get_user_prompt({
     prompt = label,
+    action_id = opts.action_id,
   }, function(input)
     if (not opts.allow_empty) and (not input or input == "") then
       cb("Input cannot be empty.")
