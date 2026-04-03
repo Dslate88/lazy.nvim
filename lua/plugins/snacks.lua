@@ -13,6 +13,7 @@ local function picker_to_harpoon(clear_first)
   for _, item in ipairs(items) do
     local path = Snacks.picker.util.path(item)
     if path then
+      path = vim.fn.fnamemodify(path, ":.")
       list:add(list.config.create_list_item(list.config, path))
     end
   end

@@ -38,25 +38,25 @@ return {
         desc = "Git Diff",
       },
       {
-        "<leader>ao",
+        "<leader>aG",
         function()
-          require("user.ai_tools.scripts").rewrite_context()
+          require("user.ai_tools.scripts").commit_message()
         end,
-        desc = "Rewrite Context File",
+        desc = "Generate commit message",
+      },
+      {
+        "<leader>ab",
+        function()
+          require("user.ai_tools.scripts").branch_diff_review()
+        end,
+        desc = "Branch Diff",
       },
       {
         "<leader>ai",
         function()
-          require("user.ai_tools.scripts").open_context_file()
+          require("user.ai_tools.scripts").open_arch_file()
         end,
-        desc = "Open Context File",
-      },
-      {
-        "<leader>ae",
-        function()
-          require("user.ai_tools.scripts").extract_context()
-        end,
-        desc = "Extract Context",
+        desc = "Open architecture.md",
       },
       {
         "<leader>ak",
@@ -99,6 +99,13 @@ return {
           require("user.ai_tools.usage").summary()
         end,
         desc = "Usage Summary",
+      },
+      {
+        "<leader>aA",
+        function()
+          require("user.arch_gen").run()
+        end,
+        desc = "Generate architecture.md",
       },
     },
     config = function(_, opts)

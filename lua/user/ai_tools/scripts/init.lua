@@ -22,6 +22,14 @@ function M.get_diff_review()
   registry.run("git_diff_review")
 end
 
+function M.commit_message()
+  registry.run("commit_message")
+end
+
+function M.branch_diff_review()
+  registry.run("branch_diff_review")
+end
+
 function M.keymap_query()
   registry.run("keymap_query")
 end
@@ -30,22 +38,14 @@ function M.analyze_file()
   registry.run("analyze_file")
 end
 
-function M.open_context_file()
+function M.open_arch_file()
   local utils = require("user.ai_tools.utils")
-  local path = utils.find_context_file()
+  local path = utils.find_arch_file()
   if not path then
-    path = vim.fn.getcwd() .. "/.ai_context.md"
-    utils.create_context_file(path)
+    vim.notify("[ai_tools] No architecture.md found. Run <leader>aA to generate one.", vim.log.levels.WARN)
+    return
   end
   vim.cmd("vsplit " .. vim.fn.fnameescape(path))
-end
-
-function M.extract_context()
-  registry.run("extract_context")
-end
-
-function M.rewrite_context()
-  registry.run("rewrite_context")
 end
 
 function M.view_keymap_details()

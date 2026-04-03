@@ -13,9 +13,7 @@ return {
         { "<leader>ar", icon = "󰓡" }, -- Harpoon Goal
         { "<leader>ad", icon = "󰙨" }, -- Design Patterns
         { "<leader>ag", icon = "󰊢" }, -- Git Diff
-        { "<leader>ao", icon = "󰑓" }, -- Rewrite Context File
         { "<leader>ai", icon = "󰈙" }, -- Open Context File
-        { "<leader>ae", icon = "󰄾" }, -- Extract Context
         { "<leader>ak", icon = "󰌌" }, -- Keymap Query
         { "<leader>as", icon = "󰍉" }, -- Analyze File
         { "<leader>at", icon = "󱁢" }, -- Terraform Docs

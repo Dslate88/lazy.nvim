@@ -143,53 +143,21 @@ function M.active_file(opts, state, cb)
   })
 end
 
--- opts: (none) — reads .ai_context.md into the user turn (for rewrite workflows)
-function M.context_file_raw(opts, state, cb)
-  local path = utils.find_context_file()
+-- opts: (none)
+function M.project_context(opts, state, cb)
+  local path = utils.find_arch_file()
   if not path then
-    cb("No .ai_context.md found to rewrite.")
+    cb(nil, nil)
     return
   end
   local content, err = utils.read_file(path)
   if not content then
-    cb("Could not read .ai_context.md: " .. (err or "unknown error"))
+    cb("Could not read architecture.md: " .. (err or "unknown error"))
     return
   end
   cb(nil, {
-    prompt = content,
-    meta = { context_file_path = path },
+    meta = { project_context = content, project_context_file = path },
   })
-end
-
--- opts: (none)
-function M.project_context(opts, state, cb)
-  local path = utils.find_context_file()
-
-  if path then
-    local content, err = utils.read_file(path)
-    if not content then
-      cb("Could not read .ai_context.md: " .. (err or "unknown error"))
-      return
-    end
-    cb(nil, {
-      meta = { project_context = content, project_context_file = path },
-    })
-  else
-    vim.ui.select(
-      { "Create .ai_context.md here", "Skip for now" },
-      { prompt = "No .ai_context.md found in project:" },
-      function(choice)
-        if choice == "Create .ai_context.md here" then
-          local new_path = vim.fn.getcwd() .. "/.ai_context.md"
-          utils.create_context_file(new_path)
-          vim.cmd("split " .. vim.fn.fnameescape(new_path))
-          cb("Created .ai_context.md — fill it in and re-run.")
-        else
-          cb(nil, nil)
-        end
-      end
-    )
-  end
 end
 
 return M

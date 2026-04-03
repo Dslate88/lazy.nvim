@@ -8,14 +8,14 @@ _Source of truth: `lua/plugins/ai-tools.lua` and `lua/user/ai_tools/scripts/regi
 
 ### `<leader>ac` — Chat
 
-| Field                | Value        |
-| -------------------- | ------------ |
-| **Script**           | `chat`       |
-| **Window**           | popup        |
-| **Conversational**   | no           |
+| Field                | Value         |
+| -------------------- | ------------- |
+| **Script**           | `chat`        |
+| **Window**           | popup         |
+| **Conversational**   | no            |
 | **Context gathered** | `user_prompt` |
 
-**What it does:** Prompts the user for a free-form message, then sends it to the AI with a system message that enables markdown-formatted output including code blocks.
+**What it does:** Prompts for a free-form message and sends it to a general technical assistant that responds in markdown with properly fenced code blocks.
 
 **When to invoke:** General questions, quick lookups, or one-off tasks that don't require file context.
 
@@ -30,14 +30,13 @@ _Source of truth: `lua/plugins/ai-tools.lua` and `lua/user/ai_tools/scripts/regi
 | **Conversational**   | yes                                               |
 | **Context gathered** | `project_context`, `user_prompt`, `harpoon_files` |
 
-**What it does:** Prompts for a goal, then sends the harpoon-marked files and project context to an expert code reviewer whose system prompt is focused on that specific goal. Opens in a split for an ongoing conversation.
+**What it does:** Prompts for a goal, then sends the harpoon-marked files to an expert code reviewer. The reviewer addresses the goal first, identifies bugs and edge cases, and educates the user if a misconception is detected. Project architecture context is injected into the system message when `architecture.md` is present.
 
 **When to invoke:** When you want the AI to review or reason about your harpoon-pinned files toward a specific objective.
 
 **In-buffer keymaps** _(conversational)_:
 
 - `<leader>f` — send a follow-up message
-- `<leader>e` — capture insights into `.ai_context.md`
 
 ---
 
@@ -50,14 +49,13 @@ _Source of truth: `lua/plugins/ai-tools.lua` and `lua/user/ai_tools/scripts/regi
 | **Conversational**   | yes                                               |
 | **Context gathered** | `project_context`, `user_prompt`, `harpoon_files` |
 
-**What it does:** Optionally prompts for focus areas, then sends harpoon-marked files to a design patterns coach that analyzes pattern opportunities and misuses, explains tradeoffs, and suggests small implementation steps.
+**What it does:** Optionally prompts for focus areas, then sends harpoon-marked files to a design coach that analyzes structural and design quality using software engineering principles. For each observation it names the pattern, explains why it applies, proposes the smallest concrete improvement, and notes tradeoffs — adapting to the language idioms of the code.
 
 **When to invoke:** When refactoring or reviewing architecture and you want pattern-level feedback on harpoon-pinned files.
 
 **In-buffer keymaps** _(conversational)_:
 
 - `<leader>f` — send a follow-up message
-- `<leader>e` — capture insights into `.ai_context.md`
 
 ---
 
@@ -70,59 +68,42 @@ _Source of truth: `lua/plugins/ai-tools.lua` and `lua/user/ai_tools/scripts/regi
 | **Conversational**   | yes                                          |
 | **Context gathered** | `project_context`, `user_prompt`, `git_diff` |
 
-**What it does:** Optionally prompts for a goal (e.g., commit message, review focus), then sends the staged git diff and project context to a git assistant. If no goal is provided, it defaults to summarizing and reviewing the changes.
+**What it does:** Optionally prompts for a review focus, then sends the staged git diff to a senior engineer who reviews for logic errors, unintended side effects, missing edge cases, code quality issues, unrelated changes, and leftover artifacts. Response is structured as: summary → findings by severity → recommendations.
 
-**When to invoke:** Before committing to review staged changes or draft a commit message.
-
-**In-buffer keymaps** _(conversational)_:
-
-- `<leader>f` — send a follow-up message
-- `<leader>e` — capture insights into `.ai_context.md`
-
----
-
-### `<leader>ao` — Rewrite Context File
-
-| Field                | Value              |
-| -------------------- | ------------------ |
-| **Script**           | `rewrite_context`  |
-| **Window**           | split              |
-| **Conversational**   | no                 |
-| **Context gathered** | `context_file_raw` |
-
-**What it does:** Reads the raw `.ai_context.md` file and instructs the AI to rewrite it for signal quality — preserving all specific technical detail while removing genuine redundancy and vague filler. The AI explains its reasoning before presenting the full rewritten file.
-
-**When to invoke:** When `.ai_context.md` has grown verbose, redundant, or contains low-signal content.
-
----
-
-### `<leader>ai` — Open Context File
-
-_(external module — `scripts.open_context_file()`, not a registry entry)_
-
-**What it does:** Opens `.ai_context.md` in a vertical split. If the file does not exist at or above the current working directory, it creates one from a default template at `CWD/.ai_context.md`.
-
-**When to invoke:** To inspect or manually edit the project context file.
-
----
-
-### `<leader>ae` — Extract Context
-
-| Field                | Value                              |
-| -------------------- | ---------------------------------- |
-| **Script**           | `extract_context`                  |
-| **Window**           | split                              |
-| **Conversational**   | yes                                |
-| **Context gathered** | `project_context`, `harpoon_files` |
-
-**What it does:** Analyzes harpoon-marked files against the existing project context and outputs only the new markdown content that should be appended — covering architectural decisions, design patterns, conventions, and cross-repo relationships not yet captured.
-
-**When to invoke:** After writing new code or completing a refactor to keep `.ai_context.md` current.
+**When to invoke:** Before committing to review staged changes.
 
 **In-buffer keymaps** _(conversational)_:
 
 - `<leader>f` — send a follow-up message
-- `<leader>e` — capture insights into `.ai_context.md`
+
+---
+
+### `<leader>ab` — Branch Diff
+
+| Field                | Value                          |
+| -------------------- | ------------------------------ |
+| **Script**           | `branch_diff_review`           |
+| **Window**           | split                          |
+| **Conversational**   | yes                            |
+| **Context gathered** | `project_context`, `git_diff`  |
+
+**What it does:** Sends the full diff between `origin/main` and the current branch HEAD to a senior engineer who provides: a summary of all changes grouped by theme, what appears complete, what looks incomplete or stubbed, any concerns, and suggested next steps toward merge readiness.
+
+**When to invoke:** When you want a high-level view of everything you've done on a feature branch — useful for a progress check or to identify what remains to do.
+
+**In-buffer keymaps** _(conversational)_:
+
+- `<leader>f` — send a follow-up message
+
+---
+
+### `<leader>ai` — Open architecture.md
+
+_(external module — `scripts.open_arch_file()`, not a registry entry)_
+
+**What it does:** Opens `architecture.md` in a vertical split by searching upward from the current working directory to the git root. Displays a warning if no file is found and suggests running `<leader>aA` to generate one.
+
+**When to invoke:** To inspect or manually edit the project architecture document.
 
 ---
 
@@ -135,7 +116,7 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 | **Conversational**   | no                            |
 | **Context gathered** | `user_prompt`, `config_files` |
 
-**What it does:** Prompts for a keymap question, then sends it along with the local `keymaps.lua` and all plugin specs (`lua/plugins/*.lua`) to a Neovim/LazyVim expert that answers with exact key combos and descriptions, including relevant LazyVim defaults.
+**What it does:** Prompts for a keymap question, then sends it along with `keymaps.lua` and all plugin specs (`lua/plugins/*.lua`) to a Neovim/LazyVim expert that answers with exact key combos and descriptions, including relevant LazyVim defaults not visible in local config.
 
 **When to invoke:** When you can't remember a keymap or want to discover what's available.
 
@@ -150,34 +131,13 @@ _(external module — `scripts.open_context_file()`, not a registry entry)_
 | **Conversational**   | yes                          |
 | **Context gathered** | `user_prompt`, `active_file` |
 
-**What it does:** Prompts for a question about the currently active file, then sends the file contents to an expert code analyst that reasons through the question step by step without rewriting code unless explicitly asked.
+**What it does:** Prompts for a question about the active buffer, then sends the file to an expert engineer who answers the question first, then provides a structured breakdown covering purpose, structure, data flow, dependencies, and notable behaviors.
 
 **When to invoke:** When you want to understand, trace, or reason about the file currently open in the editor.
 
 **In-buffer keymaps** _(conversational)_:
 
 - `<leader>f` — send a follow-up message
-- `<leader>e` — capture insights into `.ai_context.md`
-
----
-
-### `<leader>ah` — Harpoon Add from Picker
-
-_(defined in `lua/plugins/snacks.lua`)_
-
-**What it does:** From an open Snacks picker, takes all tab-selected files (falling back to the current item if none are selected) and appends them to the harpoon list.
-
-**When to invoke:** When you want to build or extend a harpoon context set by selecting files in a Snacks picker before running an AI workflow.
-
----
-
-### `<leader>aH` — Harpoon Replace from Picker
-
-_(defined in `lua/plugins/snacks.lua`)_
-
-**What it does:** From an open Snacks picker, clears the harpoon list and replaces it with the tab-selected files (falling back to the current item if none are selected).
-
-**When to invoke:** When you want to swap your entire harpoon context to a new set of files selected in a Snacks picker.
 
 ---
 
@@ -195,9 +155,9 @@ _(external module — `user.terraform_docs.lookup()`)_
 
 _(external module — `user.prompt_gen.execute()`)_
 
-**What it does:** Executes the prompt generation utility from `user.prompt_gen`, which builds a prompt from harpoon-marked files.
+**What it does:** Builds a structured prompt from harpoon-marked files via the `user.prompt_gen` module.
 
-**When to invoke:** When you need to generate a structured prompt from your harpoon list for use outside Neovim.
+**When to invoke:** When you need to generate a prompt from your harpoon list for use outside Neovim.
 
 ---
 
@@ -218,5 +178,35 @@ _(external module — `user.ai_tools.usage.summary()`)_
 **What it does:** Displays a summary of AI tools usage via the `user.ai_tools.usage` module.
 
 **When to invoke:** To review how often each AI workflow has been invoked.
+
+---
+
+### `<leader>aA` — Generate architecture.md
+
+_(external module — `user.arch_gen.run()`)_
+
+**What it does:** Generates an `architecture.md` file for the current project via the `user.arch_gen` module.
+
+**When to invoke:** When no `architecture.md` exists yet, or when you want to regenerate it for a project.
+
+---
+
+### `<leader>ah` — Harpoon Add from Picker
+
+_(defined in `lua/plugins/snacks.lua`)_
+
+**What it does:** From an open Snacks picker, takes all tab-selected files (falling back to the current item if none are selected) and appends them to the harpoon list.
+
+**When to invoke:** When you want to build or extend a harpoon context set by selecting files in a Snacks picker before running an AI workflow.
+
+---
+
+### `<leader>aH` — Harpoon Replace from Picker
+
+_(defined in `lua/plugins/snacks.lua`)_
+
+**What it does:** From an open Snacks picker, clears the harpoon list and replaces it with the tab-selected files (falling back to the current item if none are selected).
+
+**When to invoke:** When you want to swap your entire harpoon context to a new set of files selected in a Snacks picker.
 
 ---

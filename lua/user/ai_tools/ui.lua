@@ -102,16 +102,6 @@ function M.bind_followup(buf, on_followup)
   end, { buffer = buf, noremap = true, silent = true, desc = "Follow-up" })
 end
 
----Bind the capture keymap on a response buffer.
----Sends conversation history to the LLM for context extraction, appends result to .ai_context.md.
----@param buf number
----@param on_capture fun()
-function M.bind_capture(buf, on_capture)
-  vim.keymap.set("n", "<leader>e", function()
-    on_capture()
-  end, { buffer = buf, noremap = true, silent = true, desc = "Capture to context file" })
-end
-
 ---Prompt the user for input.
 ---@param opts table { prompt?, instructions? }
 ---@param on_submit fun(input:string)

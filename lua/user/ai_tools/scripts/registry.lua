@@ -3,7 +3,6 @@ local runner = require("user.ai_tools.runner")
 local config = require("user.ai_tools.config")
 local ui = require("user.ai_tools.ui")
 local logger = require("user.ai_tools.logger")
-local utils = require("user.ai_tools.utils")
 local usage = require("user.ai_tools.usage")
 
 local M = {}
@@ -16,7 +15,9 @@ local registry = {
   chat = {
     id = "chat",
     title = "Chat",
-    system = "Formatting re-enabled - code output should be wrapped in markdown, and use markdown to make text easier to read.",
+    system = [[You are a knowledgeable technical assistant.
+Answer clearly and directly. Use markdown formatting: wrap code in fenced code blocks with the language identifier, use headers for multi-section answers, and use bullet lists for enumerations.
+If the question is ambiguous, state your interpretation before answering.]],
     window = "popup",
     context = {
       { type = "user_prompt", prompt = "Enter your prompt:", save_as = "prompt" },
@@ -27,11 +28,16 @@ local registry = {
     id = "harpoon_review",
     title = "Harpoon Review",
     conversational = true,
-    system = function(state)
-      return ("You are an expert code reviewer. Think step by step, explain your thoughts, and help the user with the following GOAL: %s"):format(
-        state.goal or ""
-      )
-    end,
+    system = [[You are an expert code reviewer.
+You will be given one or more source files. The user will state a specific goal in their message.
+
+Review approach:
+- Address the stated goal directly before covering anything else
+- Identify bugs, incorrect assumptions, and edge cases
+- Suggest improvements with brief rationale — do not rewrite entire files unless asked
+- If the user seems confused or has a misconception, gently correct and educate them on the relevant concept before proceeding
+
+Format: use markdown headers to separate concerns. Lead with a short summary paragraph.]],
     window = "split",
     context = {
       { type = "project_context" },
@@ -42,23 +48,31 @@ local registry = {
       -- files first, goal last (Anthropic long-context recommendation)
       local files_block = chunks[#chunks] or ""
       local goal = state.goal or ""
-      return files_block .. "\n\n" .. goal
+      return files_block .. "\n\nGOAL: " .. goal
     end,
   },
   git_diff_review = {
     id = "git_diff_review",
     title = "Git Diff Review",
     conversational = true,
-    system = function(state)
-      local goal = (state.goal and state.goal ~= "") and state.goal or "Summarize and review the staged changes."
-      return ("You are a git assistant. Use the diff to help the user achieve the goal: %s"):format(goal)
-    end,
+    system = [[You are a senior software engineer reviewing staged code changes.
+You will be given a git diff and optionally a review focus from the user.
+
+Review the changes for:
+- Logic errors and unintended side effects
+- Missing edge case handling
+- Code quality and clarity issues
+- Unrelated changes that should be split into a separate commit
+- Any secrets, debug artifacts, or leftover TODO comments
+
+Structure your response: brief summary of what changed → findings by severity → concrete recommendations.
+Ground your response in the project architecture context if provided.]],
     window = "split",
     context = {
       { type = "project_context" },
       {
         type = "user_prompt",
-        prompt = "Describe your goal (commit message, review focus, etc.):",
+        prompt = "Review focus (optional):",
         save_as = "goal",
         allow_empty = true,
       },
@@ -67,7 +81,60 @@ local registry = {
     format_prompt = function(chunks, state)
       local diff_block = chunks[#chunks] or ""
       local goal = state.goal or ""
-      return diff_block .. (goal ~= "" and ("\n\n" .. goal) or "")
+      return diff_block .. (goal ~= "" and ("\n\nREVIEW FOCUS: " .. goal) or "")
+    end,
+  },
+  commit_message = {
+    id = "commit_message",
+    title = "Commit Message",
+    system = [[You are an expert at writing conventional commit messages.
+Given a git diff of staged changes, output a single conventional commit message.
+
+Format:
+  <type>(<optional scope>): <short imperative summary>
+
+  <optional body: explain WHY, not WHAT — only include if the summary is insufficient>
+
+Rules:
+- type must be one of: feat, fix, refactor, chore, docs, test, style, perf, ci, build
+- summary line: 72 chars max, lowercase, no trailing period, imperative mood
+- body: wrap at 72 chars, use blank line to separate from summary
+- do NOT include a footer or breaking-change trailer unless the diff clearly warrants it
+- output ONLY the commit message — no explanation, no markdown fences, no preamble]],
+    window = "popup",
+    context = {
+      { type = "git_diff" },
+    },
+    format_prompt = function(chunks, _state)
+      return chunks[1] or ""
+    end,
+  },
+  branch_diff_review = {
+    id = "branch_diff_review",
+    title = "Branch Diff Review",
+    conversational = true,
+    system = [[You are a senior software engineer reviewing a feature branch.
+You will be given the full diff between origin/main and the current branch HEAD.
+
+Your analysis should cover:
+- **Summary of changes**: a high-level overview of what was done, grouped by theme or area
+- **Work completed**: concrete features, fixes, or refactors that appear finished
+- **Potentially incomplete**: code that looks partial, stubbed, or inconsistent (TODO comments, missing tests, half-wired features)
+- **Concerns**: logic errors, unintended side effects, or code quality issues worth addressing before merge
+- **Suggested next steps**: what likely remains to bring this branch to a mergeable state
+
+Be direct and specific. Reference file names and line-level details where relevant.
+Ground your response in the project architecture context if provided.]],
+    window = "split",
+    context = {
+      { type = "project_context" },
+      {
+        type = "git_diff",
+        git_cmd = { "git", "diff", "origin/main...HEAD", "--no-color" },
+      },
+    },
+    format_prompt = function(chunks, _state)
+      return chunks[#chunks] or ""
     end,
   },
   keymap_query = {
@@ -100,13 +167,19 @@ Keep your answer concise and direct.]],
     title = "Design Patterns",
     conversational = true,
     system = function(state)
-      local focus = state.focus and state.focus ~= "" and (" Focus areas: " .. state.focus) or ""
-      return table.concat({
-        "You are a design patterns coach drawing on 'Design Patterns: Elements of Reusable Object-Oriented Software'.",
-        "Analyze the provided code for opportunities to apply or improve patterns. Call out misuses or missing abstractions.",
-        "Teach as you go: briefly explain why a pattern fits, tradeoffs, and small steps to implement it.",
-        focus,
-      }, " ")
+      local focus_line = (state.focus and state.focus ~= "")
+        and ("\n\nFocus areas for this session: " .. state.focus)
+        or ""
+      return [[You are a software design coach.
+You will be given source files. Analyze them for structural and design quality using established software engineering principles and patterns.
+
+For each observation:
+1. Name the pattern or principle at play
+2. Explain briefly why it applies or is violated in this specific code
+3. Propose the smallest concrete change that would improve it
+4. Note any tradeoffs
+
+Adapt your recommendations to the idioms and conventions of whatever language the code is written in. Teach as you go. Prefer small, incremental suggestions over wholesale rewrites.]] .. focus_line
     end,
     window = "split",
     context = {
@@ -119,55 +192,21 @@ Keep your answer concise and direct.]],
       return chunks[#chunks] or ""
     end,
   },
-  rewrite_context = {
-    id = "rewrite_context",
-    title = "Rewrite Context File",
-    system = [[This file is a project context document that AI assistants read to provide accurate, consistent help without the user needing to repeat themselves. It covers project architecture, coding standards, technical stack, and workflows.
-
-Edit it for signal quality — not brevity:
-- PRESERVE all specific technical detail: architecture decisions, stack choices, design patterns, conventions, and workflows. Even minor specifics exist because someone needed to capture them. Do not cut them.
-- REMOVE genuine redundancy: if the same fact is stated in two places, keep the clearer one and drop the duplicate
-- REMOVE vague filler: generic statements that could apply to any project and add no real signal (e.g. "we write clean code", "testing is important")
-- TIGHTEN prose: rewrite wordy explanations into direct statements without losing the underlying information
-- KEEP section headings even if a section has little content — they signal intent
-
-Length reduction is a side effect of removing noise, not a goal. The output may be similar in length to the input if the input is already specific.
-
-Walk through your reasoning: explain what you kept, what you changed, and why. Then provide the full rewritten markdown at the end.]],
-    window = "split",
-    context = {
-      { type = "context_file_raw" },
-    },
-    format_prompt = function(chunks, state)
-      return "Rewrite the following project context file. Preserve all specific technical detail — only remove genuine redundancy and vague filler. Show your reasoning before presenting the rewritten file:\n\n" .. concat_chunks(chunks)
-    end,
-  },
-  extract_context = {
-    id = "extract_context",
-    title = "Extract Context",
-    conversational = true,
-    system = "You are helping the user maintain a project context file that gives AI assistants background about their codebase. Be concise and factual. Output clean markdown.",
-    window = "split",
-    context = {
-      { type = "project_context" },
-      { type = "harpoon_files" },
-    },
-    format_prompt = function(chunks, state)
-      return table.concat({
-        concat_chunks(chunks),
-        "",
-        "Analyze the code files above.",
-        "Identify what should be ADDED to the project context file based on what is evident in the code but not yet captured in the existing project context (provided in the system message).",
-        "Look for: architectural decisions, design patterns, cross-cutting concerns, conventions, and cross-repo relationships.",
-        "Output ONLY the new markdown content to append. Be concise. Do not repeat anything already captured.",
-      }, "\n")
-    end,
-  },
   analyze_file = {
     id = "analyze_file",
     title = "Analyze File",
     conversational = true,
-    system = "You are an expert code analyst. Think step by step and help the user reason about the provided file. Do not rewrite code unless explicitly asked.",
+    system = [[You are an expert software engineer.
+You will be given a source file and a specific question about it.
+
+Answer the question first, then provide a structured breakdown of the file covering:
+- **Purpose**: what this file does and its role in the broader system
+- **Structure**: key components, functions, or sections and how they relate
+- **Data flow**: how data enters, transforms, and exits
+- **Dependencies**: what this file relies on and what relies on it
+- **Notable behaviors**: side effects, error handling, or non-obvious logic worth knowing
+
+Do not rewrite or refactor unless explicitly asked. Use markdown with fenced code blocks for any excerpts.]],
     window = "split",
     context = {
       { type = "user_prompt", prompt = "What do you want to know about this file?", save_as = "question" },
@@ -246,7 +285,11 @@ function M.run(action, opts)
       system_message = config.default_system_message
     end
     if final_meta.project_context then
-      system_message = system_message .. "\n\n" .. final_meta.project_context
+      system_message = system_message .. string.format(
+        "\n\n<project_context>\n<source>%s</source>\n<content>\n%s\n</content>\n</project_context>",
+        final_meta.project_context_file or "architecture.md",
+        final_meta.project_context
+      )
     end
     local cfg = config.get_config()
 
@@ -275,30 +318,6 @@ function M.run(action, opts)
       timeout = entry.timeout or cfg.timeout,
     }
 
-    local function bind_capture(history, response_buf)
-      ui.bind_capture(response_buf, function()
-        local capture_messages = vim.list_extend(vim.deepcopy(history), {
-          {
-            role = "user",
-            content = "From this conversation, extract any architectural decisions, design patterns, project-specific conventions, or cross-repo relationships worth preserving in the project context file. Output only the markdown content to append — concise, no commentary.",
-          },
-        })
-        runner.run(vim.tbl_extend("force", base_runner_opts, {
-          messages = capture_messages,
-          window_type = "popup",
-          on_success = function(response)
-            local path = utils.find_or_default_context_path()
-            local ok, err = utils.append_to_file(path, response)
-            if ok then
-              vim.notify("Captured to " .. vim.fn.fnamemodify(path, ":~:."), vim.log.levels.INFO)
-            else
-              ui.display_error("Capture failed: " .. (err or "unknown"))
-            end
-          end,
-        }))
-      end)
-    end
-
     local bind_followup
     bind_followup = function(history, response_buf)
       ui.bind_followup(response_buf, function(user_input)
@@ -310,7 +329,6 @@ function M.run(action, opts)
           response_buf = response_buf,
           on_conversation_update = function(updated_history, buf)
             bind_followup(updated_history, buf)
-            bind_capture(updated_history, buf)
           end,
         }))
       end)
@@ -321,7 +339,6 @@ function M.run(action, opts)
       system_message = system_message,
       on_conversation_update = entry.conversational and function(history, response_buf)
         bind_followup(history, response_buf)
-        bind_capture(history, response_buf)
       end or nil,
     }))
   end)
