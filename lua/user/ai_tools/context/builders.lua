@@ -147,10 +147,13 @@ end
 function M.git_log(opts, _state, cb)
   local cmd = opts.git_cmd or { "git", "log", "--oneline", "-20" }
   vim.system(cmd, { text = true, cwd = opts.cwd }, function(obj)
-    if obj.code ~= 0 or not obj.stdout or obj.stdout == "" then
+    if obj.code ~= 0 or obj.stdout == "" then
       return cb(nil, { prompt = "" })
     end
-    cb(nil, { prompt = "<git_log>\n" .. obj.stdout .. "</git_log>" })
+    cb(nil, {
+      prompt = "<git_log>\n" .. obj.stdout .. "</git_log>",
+      meta = { git_cmd = cmd, bytes = #obj.stdout },
+    })
   end)
 end
 
