@@ -257,28 +257,81 @@ end
 -- ─── Confirmation ─────────────────────────────────────────────────────────────
 
 -- repo_summaries: { { repo, count, skipped, estimated_tokens }, ... }
-local function show_confirmation(repo_summaries, cb)
+-- filtered_lists: { [repo_path] = { {path, bytes, tokens}, ... }, ... }
+local function show_confirmation(repo_summaries, filtered_lists, cb)
   local total_files = 0
   local total_tokens = 0
-  local lines = { string.format("Generate architecture.md — %d repo(s)\n", #repo_summaries) }
+  local lines = { string.format("  Generate architecture.md — %d repo(s)", #repo_summaries), "" }
 
   for _, s in ipairs(repo_summaries) do
     total_files = total_files + s.count
     total_tokens = total_tokens + s.estimated_tokens
     local skip_note = s.skipped > 0 and string.format(", %d skipped", s.skipped) or ""
     table.insert(lines, string.format(
-      "  %-36s %2d files%s  (~%d tok)",
+      "  %s  %d files%s  (~%d tok)",
       vim.fn.fnamemodify(s.repo, ":t") .. ":",
       s.count,
       skip_note,
       s.estimated_tokens
     ))
+    local entries = filtered_lists[s.repo] or {}
+    local repo_len = #s.repo
+    for _, entry in ipairs(entries) do
+      table.insert(lines, "    " .. entry.path:sub(repo_len + 2))
+    end
+    table.insert(lines, "")
   end
 
-  table.insert(lines, string.format("\nTotal: %d files, ~%d tokens estimated", total_files, total_tokens))
+  table.insert(lines, string.format("  Total: %d files, ~%d tokens", total_files, total_tokens))
+  table.insert(lines, "")
+  table.insert(lines, "  [y / <CR>] confirm    [n / q / <Esc>] cancel")
 
-  local choice = vim.fn.confirm(table.concat(lines, "\n"), "&Yes\n&No", 2)
-  cb(choice == 1)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
+  vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+
+  local width = math.floor(vim.o.columns * 0.65)
+  local height = math.min(math.floor(vim.o.lines * 0.8), #lines)
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = "minimal",
+    border = "rounded",
+    title = " arch_gen ",
+    title_pos = "center",
+  })
+  vim.api.nvim_win_set_option(win, "cursorline", true)
+
+  local fired = false
+  local function close_and_call(confirmed)
+    if fired then return end
+    fired = true
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
+    cb(confirmed)
+  end
+
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = buf,
+    once = true,
+    callback = function() close_and_call(false) end,
+  })
+
+  local map = function(key, confirmed)
+    vim.keymap.set("n", key, function() close_and_call(confirmed) end,
+      { buffer = buf, noremap = true, silent = true })
+  end
+  map("y",     true)
+  map("<CR>",  true)
+  map("n",     false)
+  map("q",     false)
+  map("<Esc>", false)
 end
 
 -- ─── XML file block builder ───────────────────────────────────────────────────
@@ -450,7 +503,7 @@ function M.run()
       })
     end
 
-    show_confirmation(repo_summaries, function(confirmed)
+    show_confirmation(repo_summaries, filtered_lists, function(confirmed)
       if not confirmed then
         vim.notify("[arch_gen] Cancelled.")
         return

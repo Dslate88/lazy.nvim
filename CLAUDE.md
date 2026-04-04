@@ -37,12 +37,12 @@ This is the most complex part of the config — a full AI assistant framework:
 | File/Dir               | Role                                                                                                                                        |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `config.lua`           | Defaults: provider (`openai`), model, timeout, debug flag                                                                                   |
-| `providers/`           | Pluggable AI backends: `openai.lua`, `azure.lua`, `provider_factory.lua`                                                                    |
+| `providers/`           | Pluggable AI backends: `openai.lua`, `azure.lua`, `databricks_claude.lua`, `provider_factory.lua`                                           |
 | `context/builders.lua` | Async context collectors: `user_prompt`, `harpoon_files`, `git_diff`, `git_log`, `config_files`, `active_file`, `project_context`              |
-| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, commit_message, branch_diff_review, design_patterns, keymap_query, analyze_file); also the `run()` entry point. Workflows with `conversational = true` (harpoon_review, git_diff_review, branch_diff_review, design_patterns, analyze_file) bind `<leader>f` for follow-ups. |
+| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, commit_message, branch_diff_review, design_patterns, keymap_query, analyze_file); also the `run()` entry point. |
 | `scripts/init.lua`     | Public API shim — thin wrappers that call `registry.run(action)`                                                                            |
 | `runner.lua`           | Executes requests via selected provider                                                                                                     |
-| `ui.lua`               | Popup/split windows for input and responses; binds `<leader>f` follow-up in response buffers                                                |
+| `ui.lua`               | Popup/split windows for input and responses; input popup tracks per-action prompt history (j/k to cycle in normal mode)                     |
 | `usage.lua`            | Tracks per-action invocation counts; `<leader>aU` shows a summary                                                                          |
 | `logger.lua`           | Debug logging to `$NVIM_DATA/ai_tools.log`                                                                                                  |
 | `harpoon.lua`          | Harpoon integration for getting marked file list                                                                                            |
@@ -57,6 +57,7 @@ This is the most complex part of the config — a full AI assistant framework:
 
 - `OPENAI_API_KEY`
 - `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_ENDPOINT` (if using Azure)
+- `DATABRICKS_TOKEN` and `DATABRICKS_HOST` (if using Databricks Claude)
 
 ### `arch_gen.lua` — Architecture Document Generator
 
@@ -88,13 +89,16 @@ This is the most complex part of the config — a full AI assistant framework:
 | `<leader>ap` | Generate prompt from harpoon files                                |
 | `<leader>aU` | Show AI tool usage summary                                        |
 
-### In-response keymaps (conversational workflows)
+### In-prompt keymaps (input popup)
 
-Workflows marked `conversational = true` in the registry bind these inside their response buffer:
+When the input popup is open, these normal-mode keymaps cycle through prior prompts sent for that action in the current session:
 
-| Keymap       | Action                                      |
-| ------------ | ------------------------------------------- |
-| `<leader>f`  | Send a follow-up message (continues the conversation) |
+| Keymap | Action                              |
+| ------ | ----------------------------------- |
+| `k`    | Older prompt (back in history)      |
+| `j`    | Newer prompt (forward in history)   |
+
+History is per-action, session-only (lost on Neovim exit), and capped at 50 entries per action.
 
 ### Harpoon (`<leader>h`)
 
