@@ -65,7 +65,19 @@ function M.display_response(response, window_type)
   local lines = vim.split(response or "", "\n")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   open_response_window(buf, window_type)
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
+
+  local map_opts = { buffer = buf, noremap = true, silent = true }
+  local function close_buf()
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+  vim.keymap.set("n", "q", close_buf, map_opts)
+  vim.keymap.set("n", "<Esc>", close_buf, map_opts)
+  vim.keymap.set("n", "y", function()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    vim.fn.setreg("+", table.concat(lines, "\n"))
+    vim.notify("[ai_tools] Response copied to clipboard.")
+  end, map_opts)
+
   return buf
 end
 
@@ -130,8 +142,16 @@ function M.get_user_prompt(opts, on_submit)
     end
   end
 
+  local function cancel()
+    callbacks[buf] = nil
+    vim.api.nvim_win_close(win, true)
+    vim.notify("[ai_tools] Cancelled.", vim.log.levels.INFO)
+  end
+
   vim.keymap.set("i", "<CR>", submit, { buffer = buf, noremap = true, silent = true })
   vim.keymap.set("n", "<CR>", submit, { buffer = buf, noremap = true, silent = true })
+  vim.keymap.set("n", "<Esc>", cancel, { buffer = buf, noremap = true, silent = true })
+  vim.keymap.set("n", "q", cancel, { buffer = buf, noremap = true, silent = true })
 
   vim.keymap.set("n", "k", function()
     hist_idx = math.max(1, hist_idx - 1)

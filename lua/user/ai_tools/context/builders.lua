@@ -42,7 +42,12 @@ end
 function M.harpoon_files(opts, state, cb)
   local files = marked.get_marked_files()
   if #files == 0 then
-    cb("No marked files found during execution.")
+    if opts.optional then
+      vim.notify("[ai_tools] No harpoon files marked — continuing without file context.", vim.log.levels.WARN)
+      cb(nil, nil)
+    else
+      cb("No marked files found during execution.")
+    end
     return
   end
 

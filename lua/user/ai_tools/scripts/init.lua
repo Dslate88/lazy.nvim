@@ -38,6 +38,10 @@ function M.analyze_file()
   registry.run("analyze_file")
 end
 
+function M.power_prompt()
+  registry.run("power_prompt")
+end
+
 function M.open_arch_file()
   local utils = require("user.ai_tools.utils")
   local path = utils.find_arch_file()

@@ -11,6 +11,17 @@ local function concat_chunks(chunks)
   return table.concat(chunks, "\n\n")
 end
 
+local function format_files_then_goal(chunks, state)
+  local goal = state.goal or ""
+  local files_block = chunks[#chunks] or ""
+  local parts = {}
+  if files_block ~= "" then
+    table.insert(parts, files_block)
+  end
+  table.insert(parts, "GOAL: " .. goal)
+  return table.concat(parts, "\n\n")
+end
+
 local registry = {
   chat = {
     id = "chat",
@@ -43,12 +54,7 @@ Format: use markdown headers to separate concerns. Lead with a short summary par
       { type = "user_prompt", prompt = "Enter the goal", save_as = "goal" },
       { type = "harpoon_files" },
     },
-    format_prompt = function(chunks, state)
-      -- files first, goal last (Anthropic long-context recommendation)
-      local files_block = chunks[#chunks] or ""
-      local goal = state.goal or ""
-      return files_block .. "\n\nGOAL: " .. goal
-    end,
+    format_prompt = format_files_then_goal,
   },
   git_diff_review = {
     id = "git_diff_review",
@@ -162,8 +168,7 @@ Keep your answer concise and direct.]],
     id = "design_patterns",
     title = "Design Patterns",
     system = function(state)
-      local focus_line = (state.focus and state.focus ~= "")
-        and ("\n\nFocus areas for this session: " .. state.focus)
+      local focus_line = (state.focus and state.focus ~= "") and ("\n\nFocus areas for this session: " .. state.focus)
         or ""
       return [[You are a software design coach.
 You will be given source files. Analyze them for structural and design quality using established software engineering principles and patterns.
@@ -186,6 +191,38 @@ Adapt your recommendations to the idioms and conventions of whatever language th
       -- files first; focus is already in system message so drop it from prompt
       return chunks[#chunks] or ""
     end,
+  },
+  power_prompt = {
+    id = "power_prompt",
+    title = "Power Prompt",
+    system = [[You are a prompt engineering expert with deep knowledge of software design principles.
+
+You will be given a rough goal and codebase context (files and optionally a project architecture document).
+
+Your task: rewrite the goal as a comprehensive, highly specific prompt for an AI coding assistant.
+
+Use the provided files to understand LOCATION and SCOPE only — what exists, where it lives, what it's called. Do NOT treat existing code as a quality reference or replicate its patterns.
+
+For quality and approach, defer to:
+- The project architecture document if provided (it describes intended design)
+- Established best practices for the language and domain
+
+If the existing code contains anti-patterns, inconsistencies, or poor practices, the rewritten prompt should explicitly call them out and instruct the AI to fix them rather than perpetuate them.
+
+The rewritten prompt must:
+- Reference concrete file names, function names, and module paths (for scope/location)
+- Spell out acceptance criteria and edge cases the user likely hasn't considered
+- Specify the exact scope of change (what to touch, what to leave alone)
+- Flag any anti-patterns in the relevant code and instruct the AI to address them
+- Be written in second person, addressed to an AI coding assistant
+- Include no preamble — output only the rewritten prompt itself]],
+    window = "popup",
+    context = {
+      { type = "project_context" },
+      { type = "user_prompt", prompt = "Describe your goal:", save_as = "goal" },
+      { type = "harpoon_files", optional = true },
+    },
+    format_prompt = format_files_then_goal,
   },
   analyze_file = {
     id = "analyze_file",
@@ -279,11 +316,12 @@ function M.run(action, opts)
       system_message = config.default_system_message
     end
     if final_meta.project_context then
-      system_message = system_message .. string.format(
-        "\n\n<project_context>\n<source>%s</source>\n<content>\n%s\n</content>\n</project_context>",
-        final_meta.project_context_file or "architecture.md",
-        final_meta.project_context
-      )
+      system_message = system_message
+        .. string.format(
+          "\n\n<project_context>\n<source>%s</source>\n<content>\n%s\n</content>\n</project_context>",
+          final_meta.project_context_file or "architecture.md",
+          final_meta.project_context
+        )
     end
     local cfg = config.get_config()
 

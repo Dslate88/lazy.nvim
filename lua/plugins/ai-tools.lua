@@ -107,6 +107,13 @@ return {
         end,
         desc = "Generate architecture.md",
       },
+      {
+        "<leader>aP",
+        function()
+          require("user.ai_tools.scripts").power_prompt()
+        end,
+        desc = "Power Prompt",
+      },
     },
     config = function(_, opts)
       require("user.ai_tools.config").setup(opts)

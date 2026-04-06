@@ -39,7 +39,7 @@ This is the most complex part of the config — a full AI assistant framework:
 | `config.lua`           | Defaults: provider (`openai`), model, timeout, debug flag                                                                                   |
 | `providers/`           | Pluggable AI backends: `openai.lua`, `azure.lua`, `databricks_claude.lua`, `provider_factory.lua`                                           |
 | `context/builders.lua` | Async context collectors: `user_prompt`, `harpoon_files`, `git_diff`, `git_log`, `config_files`, `active_file`, `project_context`              |
-| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, commit_message, branch_diff_review, design_patterns, keymap_query, analyze_file); also the `run()` entry point. |
+| `scripts/registry.lua` | Workflow definitions (chat, harpoon_review, git_diff_review, commit_message, branch_diff_review, design_patterns, keymap_query, analyze_file, power_prompt); also the `run()` entry point. |
 | `scripts/init.lua`     | Public API shim — thin wrappers that call `registry.run(action)`                                                                            |
 | `runner.lua`           | Executes requests via selected provider                                                                                                     |
 | `ui.lua`               | Popup/split windows for input and responses; input popup tracks per-action prompt history (j/k to cycle in normal mode)                     |
@@ -88,17 +88,26 @@ This is the most complex part of the config — a full AI assistant framework:
 | `<leader>at` | Terraform docs lookup                                             |
 | `<leader>ap` | Generate prompt from harpoon files                                |
 | `<leader>aU` | Show AI tool usage summary                                        |
+| `<leader>aP` | Enhance a rough goal into a detailed prompt using project context + harpoon files |
 
 ### In-prompt keymaps (input popup)
 
-When the input popup is open, these normal-mode keymaps cycle through prior prompts sent for that action in the current session:
+When the input popup is open, these normal-mode keymaps are available:
 
-| Keymap | Action                              |
-| ------ | ----------------------------------- |
-| `k`    | Older prompt (back in history)      |
-| `j`    | Newer prompt (forward in history)   |
+| Keymap          | Action                              |
+| --------------- | ----------------------------------- |
+| `k`             | Older prompt (back in history)      |
+| `j`             | Newer prompt (forward in history)   |
+| `<Esc>` / `q`  | Cancel and close the popup          |
 
 History is per-action, session-only (lost on Neovim exit), and capped at 50 entries per action.
+
+### Response buffer keymaps
+
+| Keymap          | Action                                       |
+| --------------- | -------------------------------------------- |
+| `q` / `<Esc>`  | Close the response buffer                    |
+| `y`             | Yank full response to system clipboard (`+`) |
 
 ### Harpoon (`<leader>h`)
 
@@ -121,8 +130,8 @@ History is per-action, session-only (lost on Neovim exit), and capped at 50 entr
 - Custom code that is not a plugin goes in `lua/user/`.
 - Each directory uses `init.lua` to export its submodules.
 - Module tables are named `M` by convention.
-- New AI workflows are added to `scripts/registry.lua`; new providers to `providers/`.
-- Context builders in `context/builders.lua` follow the signature `function(opts, state, cb)` where `cb(err, {prompt?, meta?})`.
+- New AI workflows are added to `scripts/registry.lua`; new providers to `providers/`. Use the `format_files_then_goal(chunks, state)` local helper in `registry.lua` for workflows that combine harpoon files with a user goal.
+- Context builders in `context/builders.lua` follow the signature `function(opts, state, cb)` where `cb(err, {prompt?, meta?})`. The `harpoon_files` builder accepts `optional = true` to warn-and-skip instead of abort when no files are marked.
 
 ## Open TODOs (from comments in code)
 

@@ -22,6 +22,7 @@ return {
         { "<leader>aU", icon = "󰻿" }, -- Usage Summary
         { "<leader>ah", icon = "󰐕" }, -- Harpoon add from picker
         { "<leader>aH", icon = "󰮍" }, -- Harpoon replace from picker
+        { "<leader>aP", icon = "󱐋" }, -- Power Prompt
       },
     },
   },
