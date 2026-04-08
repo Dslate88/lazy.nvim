@@ -71,7 +71,9 @@ function M.display_response(response, window_type)
     vim.api.nvim_buf_delete(buf, { force = true })
   end
   vim.keymap.set("n", "q", close_buf, map_opts)
-  vim.keymap.set("n", "<Esc>", close_buf, map_opts)
+  if window_type == "popup" then
+    vim.keymap.set("n", "<Esc>", close_buf, map_opts)
+  end
   vim.keymap.set("n", "y", function()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     vim.fn.setreg("+", table.concat(lines, "\n"))
